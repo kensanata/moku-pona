@@ -1,21 +1,66 @@
 #!/usr/bin/env perl
+# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+
+# This program is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program. If not, see <http://www.gnu.org/licenses/>.
+
 use Modern::Perl;
+use URI;
 
 # This is our directory. Every gopher URL we subscribe to will generate a file
 # in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
 # detect changes. We cannot rely on feeds.
-my $data_dir = '~/.moku-pona';
+our $data_dir = '~/.moku-pona';
 
 # This is a gopher map listing all the pages being watched whih means that you
 # can view using a gopher client. Or you can add it to your gopher site for
 # others to see.
-my $site_list = $data_dir . '/sites.txt';
+our $site_list = $data_dir . '/sites.txt';
 
 # This is the generated list with all the updates.
-my $updated_list = $data_dir . '/updates.txt';
+our $updated_list = $data_dir . '/updates.txt';
+
+sub load_site {
+  return () if not -f $site_list;
+  open(my $fh, "<:encoding(UTF-8)", $site_list)
+      or die "Cannot read $site_list: $!\n";
+  my @lines = <$fh>;
+  return \@lines;
+}
+
+sub save_site {
+  my $lines = shift;
+  mkdir $data_dir unless -d $data_dir;
+  open(my $fh, ">:encoding(UTF-8)", $site_list)
+      or die "Cannot write $site_list: $!\n";
+  print $fh @$lines;
+}
 
 sub do_add {
-  # FIXME
+  my $uri = URI->new(shift);
+  my $name = shift||$uri;
+  my $path = $uri->path;
+  $path = substr($path, 1) if substr($path, 0, 1) eq "/";
+  my $type = substr($path, 0, 1);
+  my $selector = substr($path, 1);
+  my $line = join("\t", $type . $name, $selector,
+		  $uri->host, $uri->port||70) . "\n";
+  my $site = load_site();
+  if (not grep(/^$line$/, @$site)) {
+    push(@$site, $line);
+  } else {
+    warn("$uri already exists in $site_list\n");
+  }
+  save_site($site);
 }
 
 sub do_cleanup {
@@ -54,4 +99,6 @@ sub main {
   else { do_help() }
 }
 
-main();
+main() if $0 =~ /\bmoku-pona$/;
+
+1;
