@@ -1,0 +1,57 @@
+#!/usr/bin/env perl
+use Modern::Perl;
+
+# This is our directory. Every gopher URL we subscribe to will generate a file
+# in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
+# detect changes. We cannot rely on feeds.
+my $data_dir = '~/.moku-pona';
+
+# This is a gopher map listing all the pages being watched whih means that you
+# can view using a gopher client. Or you can add it to your gopher site for
+# others to see.
+my $site_list = $data_dir . '/sites.txt';
+
+# This is the generated list with all the updates.
+my $updated_list = $data_dir . '/updates.txt';
+
+sub do_add {
+  # FIXME
+}
+
+sub do_cleanup {
+  # FIXME
+}
+
+sub do_update {
+  # FIXME
+}
+
+sub do_help {
+  print <<"EOF";
+moku-pona add gopher-url
+
+  This adds a gopher-url to the list of subscribed items. These are stored in
+  $site_list.
+
+moku-pona cleanup
+
+  This deletes all the cached pages that we are no longer subscribed to. These
+  are stored in $data_dir.
+
+moku-pona update
+
+  This updates all the subscribed items and generates a new local gopher menu
+  for you to visit. This menu is available as $updated_list.
+
+EOF
+}
+
+sub main {
+  my $command = shift(@ARGV) || "help";
+  if ($command eq "add") { do_add(@ARGV) }
+  elsif ($command eq "cleanup") { do_cleanup() }
+  elsif ($command eq "update") { do_update() }
+  else { do_help() }
+}
+
+main();
