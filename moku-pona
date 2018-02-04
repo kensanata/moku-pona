@@ -14,6 +14,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 use Modern::Perl;
+use IO::Socket::IP;
 use URI;
 
 # This is our directory. Every gopher URL we subscribe to will generate a file
@@ -29,20 +30,49 @@ our $site_list = $data_dir . '/sites.txt';
 # This is the generated list with all the updates.
 our $updated_list = $data_dir . '/updates.txt';
 
+sub query_gopher {
+  my $selector = shift;
+  my $host = shift;
+  my $port = shift;
+  
+  # create client
+  my $socket = IO::Socket::IP->new(
+    PeerHost => $host,
+    PeerPort => $port,
+    Type     => SOCK_STREAM, )
+      or die "Cannot construct client socket to $host:$port: $@\n";
+
+  $socket->print("$selector\r\n");
+  shutdown($socket, 1);
+  local $/ = undef; # slurp
+  return <$socket>;
+}
+
 sub load_site {
   return () if not -f $site_list;
   open(my $fh, "<:encoding(UTF-8)", $site_list)
       or die "Cannot read $site_list: $!\n";
-  my @lines = <$fh>;
+  # only allow item type 1: "menu"
+  my @lines = grep(/^1/, <$fh>);
   return \@lines;
 }
 
-sub save_site {
-  my $lines = shift;
+sub load_file {
+  my $file = shift;
+  return "" if not -f $file;
+  open(my $fh, "<:encoding(UTF-8)", $file)
+      or die "Cannot read $file: $!\n";
+  local $/ = undef; # slurp
+  return <$fh>;
+}
+
+sub save_file {
+  my $file = shift;
+  my $data = shift;
   mkdir $data_dir unless -d $data_dir;
-  open(my $fh, ">:encoding(UTF-8)", $site_list)
-      or die "Cannot write $site_list: $!\n";
-  print $fh @$lines;
+  open(my $fh, ">:encoding(UTF-8)", $file)
+      or die "Cannot write $file: $!\n";
+  print $fh $data;
 }
 
 sub do_add {
@@ -53,22 +83,61 @@ sub do_add {
   my $type = substr($path, 0, 1);
   my $selector = substr($path, 1);
   my $line = join("\t", $type . $name, $selector,
-		  $uri->host, $uri->port||70) . "\n";
+		  $uri->host, $uri->port||70) . "\r\n";
   my $site = load_site();
   if (not grep(/^$line$/, @$site)) {
     push(@$site, $line);
   } else {
     warn("$uri already exists in $site_list\n");
   }
-  save_site($site);
+  save_file($site_list, join("", @$site));
 }
 
 sub do_cleanup {
   # FIXME
 }
 
+sub add_update {
+  my $line = shift;
+  my ($sec, $min, $hour, $mday, $mon, $year) = gmtime(); # UTC
+  my $date = sprintf('%4d-%02d-%02d', $year + 1900, $mon + 1, $mday);
+  my @lines;
+  if (-f $updated_list) {
+    open(my $fh, "<:encoding(UTF-8)", $updated_list)
+	or die "Cannot read $updated_list: $!\n";
+    @lines = <$fh>;
+  }
+  my $found = 0;
+  # first, let's see if we already ran today
+  for (my $i = 0; $i < @lines; $i++) {
+    if ($lines[$i] =~ /^i$date\t/) {
+      splice(@lines, $i + 1, 0, $line);
+      $found = $i + 1;
+    }
+  }
+  if (not $found) {
+    # add to the front
+    unshift(@lines, $line);
+    unshift(@lines, "i$date\t\t\t\r\n");
+  }
+  save_file($updated_list, join("", @lines));
+}
+
 sub do_update {
-  # FIXME
+  my $site = load_site();
+  for my $line (@$site) {
+    # skip item type
+    my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
+    $port += 0;
+    print("Fetching $desc ($host:$port/$selector)\n");
+    my $new = query_gopher($selector, $host, $port);
+    my $cache = "$data_dir/$host-$port-$selector.txt";
+    my $old = load_file($cache);
+    if ($new ne $old) {
+      add_update($line);
+      save_file($cache, $new);
+    }
+  }
 }
 
 sub do_help {

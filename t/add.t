@@ -26,5 +26,5 @@ is(load_site(), undef, "$site_list is empty");
 do_add("gopher://gopher.club/1phlogs", "Gopher Club");
 my $site = load_site();
 is(@$site, 1, "$site_list has one line");
-is($site->[0], "1Gopher Club\tphlogs\tgopher.club\t70\n", "entry was added");
+is($site->[0], "1Gopher Club\tphlogs\tgopher.club\t70\r\n", "entry was added");
 done_testing();
