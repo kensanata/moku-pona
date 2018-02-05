@@ -20,7 +20,7 @@ use URI;
 # This is our directory. Every gopher URL we subscribe to will generate a file
 # in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
 # detect changes. We cannot rely on feeds.
-our $data_dir = '~/.moku-pona';
+our $data_dir = ($ENV{HOME} || $ENV{LOGDIR}) . '/.moku-pona';
 
 # This is a gopher map listing all the pages being watched whih means that you
 # can view using a gopher client. Or you can add it to your gopher site for
@@ -49,11 +49,14 @@ sub query_gopher {
 }
 
 sub load_site {
-  return () if not -f $site_list;
+  my $file = shift;
+  return [] if not -f $site_list;
   open(my $fh, "<:encoding(UTF-8)", $site_list)
       or die "Cannot read $site_list: $!\n";
   # only allow item type 1: "menu"
+  local $/ = "\r\n";
   my @lines = grep(/^1/, <$fh>);
+  chomp(@lines);
   return \@lines;
 }
 
@@ -77,20 +80,24 @@ sub save_file {
 
 sub do_add {
   my $uri = URI->new(shift);
+  if (not $uri->scheme or $uri->scheme !~ /^gophers?$/) {
+    warn("Only gopher URLs allowed\n");
+    return;
+  }
   my $name = shift||$uri;
   my $path = $uri->path;
   $path = substr($path, 1) if substr($path, 0, 1) eq "/";
-  my $type = substr($path, 0, 1);
-  my $selector = substr($path, 1);
+  my $type = $path ? substr($path, 0, 1) : "";
+  my $selector = $path ? substr($path, 1) : "";
   my $line = join("\t", $type . $name, $selector,
-		  $uri->host, $uri->port||70) . "\r\n";
+		  $uri->host, $uri->port||70);
   my $site = load_site();
   if (not grep(/^$line$/, @$site)) {
     push(@$site, $line);
   } else {
     warn("$uri already exists in $site_list\n");
   }
-  save_file($site_list, join("", @$site));
+  save_file($site_list, join("\r\n", @$site, ""));
 }
 
 sub do_cleanup {
@@ -105,22 +112,37 @@ sub add_update {
   if (-f $updated_list) {
     open(my $fh, "<:encoding(UTF-8)", $updated_list)
 	or die "Cannot read $updated_list: $!\n";
-    @lines = <$fh>;
+    local $/ = "\r\n";
+    @lines = <$fh>; # includes info items
+    chomp(@lines);
   }
   my $found = 0;
   # first, let's see if we already ran today
   for (my $i = 0; $i < @lines; $i++) {
     if ($lines[$i] =~ /^i$date\t/) {
+      print("Adding to $date\n");
       splice(@lines, $i + 1, 0, $line);
       $found = $i + 1;
+      last;
     }
   }
+  # if we didn't find the date, add it to the front
   if (not $found) {
-    # add to the front
+    print("Adding new section for $date\n");
+    unshift(@lines, "i\t\t\t"); # empty line
     unshift(@lines, $line);
-    unshift(@lines, "i$date\t\t\t\r\n");
+    unshift(@lines, "i$date\t\t\t");
+    $found = 2;
   }
-  save_file($updated_list, join("", @lines));
+  # and remove any past mentions
+  for (my $i = $found + 1; $i < @lines; $i++) {
+    if ($lines[$i] eq $line) {
+      print("Removing older listing\n");
+      splice(@lines, $i, 1);
+      last;
+    }
+  }
+  save_file($updated_list, join("\r\n", @lines, ""));
 }
 
 sub do_update {
@@ -129,14 +151,29 @@ sub do_update {
     # skip item type
     my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
     $port += 0;
-    print("Fetching $desc ($host:$port/$selector)\n");
+    print("Fetching $desc ($host:$port/$selector)...");
     my $new = query_gopher($selector, $host, $port);
+    $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
     my $old = load_file($cache);
     if ($new ne $old) {
+      print("updated\n");
       add_update($line);
       save_file($cache, $new);
+    } else {
+      print("unchanged\n");
     }
+  }
+}
+
+sub do_list {
+  my $site = load_site();
+  print("Subscribed items in $site_list:\n");
+  print("none\n") unless @$site;
+  for my $line (@$site) {
+    # skip item type
+    my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
+    print("$desc ($host:$port/$selector)\n");
   }
 }
 
@@ -144,8 +181,12 @@ sub do_help {
   print <<"EOF";
 moku-pona add gopher-url
 
-  This adds a gopher-url to the list of subscribed items. These are stored in
+  This adds a gopher URL to the list of subscribed items. These are stored in
   $site_list.
+
+moku-pona list
+
+  This lists all the subscribed items.
 
 moku-pona cleanup
 
@@ -163,6 +204,7 @@ EOF
 sub main {
   my $command = shift(@ARGV) || "help";
   if ($command eq "add") { do_add(@ARGV) }
+  elsif ($command eq "list") { do_list() }
   elsif ($command eq "cleanup") { do_cleanup() }
   elsif ($command eq "update") { do_update() }
   else { do_help() }

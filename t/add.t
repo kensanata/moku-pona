@@ -22,9 +22,9 @@ our $site_list = $data_dir . '/sites.txt';
 our $updated_list = $data_dir . '/updates.txt';
 
 unlink $site_list if -f $site_list;
-is(load_site(), undef, "$site_list is empty");
+is(scalar(@{load_site()}), 0, "$site_list is empty");
 do_add("gopher://gopher.club/1phlogs", "Gopher Club");
 my $site = load_site();
 is(@$site, 1, "$site_list has one line");
-is($site->[0], "1Gopher Club\tphlogs\tgopher.club\t70\r\n", "entry was added");
+is($site->[0], "1Gopher Club\tphlogs\tgopher.club\t70", "entry was added");
 done_testing();

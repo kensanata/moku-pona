@@ -90,8 +90,8 @@ if (!defined $pid) {
 # setup
 
 open(my $fh, ">", "$site_list") or die "Cannot write $site_list: $!\n";
-my $line = "1Test Phlog\tselector\tlocalhost\t$port\r\n";
-print $fh $line;
+my $line = "1Test Phlog\tselector\tlocalhost\t$port";
+print $fh $line . "\r\n";
 close($fh);
 
 unlink($updated_list) if -f $updated_list;
@@ -128,8 +128,8 @@ is(scalar(() = $data =~ m/$line/mg), 1, "just one line");
 # add another phlog
 
 open($fh, ">>", "$site_list") or die "Cannot append to $site_list: $!\n";
-$line = "1Other Phlog\tother\tlocalhost\t$port\r\n";
-print $fh $line;
+$line = "1Other Phlog\tother\tlocalhost\t$port";
+print $fh $line . "\r\n";
 close($fh);
 
 do_update();
