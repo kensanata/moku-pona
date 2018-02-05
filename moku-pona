@@ -79,7 +79,9 @@ sub save_file {
 }
 
 sub do_add {
-  my $uri = URI->new(shift);
+  my $str = shift;
+  $str = "gopher://" . $str unless $str =~ /:\/\//;
+  my $uri = URI->new($str);
   if (not $uri->scheme or $uri->scheme !~ /^gophers?$/) {
     warn("Only gopher URLs allowed\n");
     return;
