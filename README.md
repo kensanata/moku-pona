@@ -83,6 +83,16 @@ under a date header which is based on the current time, UTC. Any
 previous mention of the item is removed. Thus, every item is just
 listed once, under the date it was last updated.
 
+## Limitations
+
+It only detects changes. Thus, if there is an item that points to a
+phlog, that's great. Sometimes people put their phlog in a folder per
+year. If the Gopher menu lists each folder and a date with the latest
+change, then that's great, you can use it. Without it, you're in
+trouble: you need to subscribe to the item for the current year in
+order to see changes, but when the next year comes around, you're
+subscribed to the wrong item.
+
 ## Dependencies
 
 Perl modules:
