@@ -79,3 +79,9 @@ Anytime moku pona fetches a subscribed item, it is saved in
 under a date header which is based on the current time, UTC. Any
 previous mention of the item is removed. Thus, every item is just
 listed once, under the date it was last updated.
+
+## Dependencies
+
+Perl modules:
+
+* Modern::Perl
