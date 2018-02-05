@@ -26,8 +26,8 @@ Check the list:
 ```
 $ ./moku-pona list
 Subscribed items in /home/alex/.moku-pona/sites.txt:
-Alex Schroeder (alexschroeder.ch:70/)
-Tomasino (sdf.org:70//users/tomasino/phlog)
+Alex Schroeder (alexschroeder.ch:70)
+Tomasino (sdf.org:70/1/users/tomasino/phlog)
 ```
 
 Use a Gopher client like [VF-1] to browse the same list:
@@ -45,16 +45,16 @@ Update your subscriptions:
 
 ```
 $ ./moku-pona update
-Fetching Alex Schroeder (alexschroeder.ch:70/)...updated
-Fetching Tomasino (sdf.org:70//users/tomasino/phlog)...updated
+Fetching Alex Schroeder...updated
+Fetching Tomasino...updated
 ```
 
 Do it again:
 
 ```
 $ ./moku-pona update
-Fetching Alex Schroeder (alexschroeder.ch:70/)...unchanged
-Fetching Tomasino (sdf.org:70//users/tomasino/phlog)...unchanged
+Fetching Alex Schroeder...unchanged
+Fetching Tomasino...unchanged
 ```
 
 Browse your list of updates:

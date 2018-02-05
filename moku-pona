@@ -148,7 +148,7 @@ sub do_update {
     # skip item type
     my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
     $port += 0;
-    print("Fetching $desc ($host:$port/$selector)...");
+    print("Fetching $desc...");
     my $new = query_gopher($selector, $host, $port);
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
@@ -170,7 +170,11 @@ sub do_list {
   for my $line (@$site) {
     # skip item type
     my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
-    print("$desc ($host:$port/$selector)\n");
+    if ($selector) {
+      print("$desc ($host:$port/1$selector)\n");
+    } else {
+      print("$desc ($host:$port)\n");
+    }
   }
 }
 
