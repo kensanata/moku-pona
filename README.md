@@ -30,7 +30,8 @@ Alex Schroeder (alexschroeder.ch:70)
 Tomasino (sdf.org:70/1/users/tomasino/phlog)
 ```
 
-Use a Gopher client like [VF-1] to browse the same list:
+Use a Gopher client like [VF-1](https://github.com/solderpunk/VF-1) to
+browse the same list:
 
 ```
 $ vf1 ~/.moku-pona/sites.txt 
@@ -70,4 +71,3 @@ Enjoy your flight through Gopherspace...
 
 And that's it!
 
-[VF1] https://github.com/solderpunk/VF-1
