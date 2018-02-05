@@ -173,9 +173,9 @@ sub do_list {
     # skip item type
     my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
     if ($selector) {
-      print("$desc ($host:$port/1$selector)\n");
+      print(qq{moku-pona add $host:$port/1$selector "$desc"\n});
     } else {
-      print("$desc ($host:$port)\n");
+      print(qq{moku-pona add $host:$port "$desc"\n});
     }
   }
 }

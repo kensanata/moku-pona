@@ -26,9 +26,12 @@ Check the list:
 ```
 $ ./moku-pona list
 Subscribed items in /home/alex/.moku-pona/sites.txt:
-Alex Schroeder (alexschroeder.ch:70)
-Tomasino (sdf.org:70/1/users/tomasino/phlog)
+moku-pona add alexschroeder.ch:70 "Alex Schroeder"
+moku-pona add sdf.org:70/1/users/tomasino/phlog "Tomasino"
 ```
+
+Notice how this makes it easier to share your subscriptions with
+others as they can just run it from the shell.
 
 Use a Gopher client like [VF-1](https://github.com/solderpunk/VF-1) to
 browse the same list:
