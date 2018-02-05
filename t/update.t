@@ -87,7 +87,8 @@ if (!defined $pid) {
   server->run(port => $port);
 }
 
-# setup tests
+# setup
+
 open(my $fh, ">", "$site_list") or die "Cannot write $site_list: $!\n";
 my $line = "1Test Phlog\tselector\tlocalhost\t$port\r\n";
 print $fh $line;
@@ -96,13 +97,14 @@ close($fh);
 unlink($updated_list) if -f $updated_list;
 
 my $cache = "$data_dir/localhost-$port-selector.txt";
-
 unlink($cache) if -f $cache;
 
-# run tests
+
 my $site = load_site();
 is(@$site, 1, "$site_list has one line");
 is($site->[0], $line, "entry was added");
+
+# first test
 
 do_update();
 
@@ -112,11 +114,31 @@ my $data = load_file($updated_list);
 like($data, qr/^i\d\d\d\d-\d\d-\d\d\t/, "updated list has date");
 like($data, qr/$line/, "updated list has line");
 
+# make sure we don't get duplicates
+
+do_update();
+
+# how to get the number of matches involves forcing list context:
+# my $number = () = $string =~ /\./gi;
+
+$data = load_file($updated_list);
+is(scalar(() = $data =~ m/^i\d\d\d\d-\d\d-\d\d\t/mg), 1, "just one date");
+is(scalar(() = $data =~ m/$line/mg), 1, "just one line");
+
+# add another phlog
+
+open($fh, ">>", "$site_list") or die "Cannot append to $site_list: $!\n";
+$line = "1Other Phlog\tother\tlocalhost\t$port\r\n";
+print $fh $line;
+close($fh);
+
 do_update();
 
 $data = load_file($updated_list);
-is(grep(qr/^i\d\d\d\d-\d\d-\d\d\t/, $data), 1, "just one date");
-is(grep(qr/$line/, $data), 1, "just one line");
+is(scalar(() = $data =~ m/^i\d\d\d\d-\d\d-\d\d\t/mg), 1, "just one date");
+is(scalar(() = $data =~ m/^1/mg), 2, "two menus");
+like($data, qr/i\d\d\d\d-\d\d-\d\d.*\r\n1Other.*\r\n1Test.*\r\n/,
+     "order of entries is correct");
 
 unlink($cache) if -f $cache;
 
