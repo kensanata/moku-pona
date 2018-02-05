@@ -71,3 +71,11 @@ Enjoy your flight through Gopherspace...
 
 And that's it!
 
+## How does it work?
+
+Anytime moku pona fetches a subscribed item, it is saved in
+`~/.moku-pona` unless it is unchanged. If it is new or updated,
+`~/.moku-pona/updates.txt` is updated. Items are placed at the top
+under a date header which is based on the current time, UTC. Any
+previous mention of the item is removed. Thus, every item is just
+listed once, under the date it was last updated.
