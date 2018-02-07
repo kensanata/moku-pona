@@ -127,12 +127,21 @@ sub add_update {
       last;
     }
   }
-  # if we didn't find the date, add it to the front
+  # if we didn't find the date, add it to the front but skip info lines that
+  # don't look like dates
   if (not $found) {
-    unshift(@lines, "i\t\t\t"); # empty line
-    unshift(@lines, $line);
-    unshift(@lines, "i$date\t\t\t");
-    $found = 2;
+    my @block;
+    push(@block, "i$date\t\t\t");
+    push(@block, $line);
+    push(@block, "i\t\t\t"); # empty line
+    for (my $i = 0; $i < @lines; $i++) {
+      if ($lines[$i] =~ /^i$date\t/) {
+	$found = $i;
+	last;
+      }
+    }
+    splice(@lines, $found, 0, @block);
+    $found += @block;
   }
   # and remove any past mentions
   for (my $i = $found + 1; $i < @lines; $i++) {

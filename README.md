@@ -74,6 +74,15 @@ Enjoy your flight through Gopherspace...
 
 And that's it!
 
+## Fancy Header
+
+You can edit `~/.moku-pona/updates.txt` and add stuff to the top or
+bottom. Just remember that any lines you add must be regular Gopher
+menu items. If they're information, they must must start with "i" and
+end with "\t\t\t\r\n", three tabulators, a carriage return and a
+newline, and the text you add shouldn't look like a date or Moku Pona
+will happily add new lines above it.
+
 ## How does it work?
 
 Anytime moku pona fetches a subscribed item, it is saved in

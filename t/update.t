@@ -125,6 +125,11 @@ $data = load_file($updated_list);
 is(scalar(() = $data =~ m/^i\d\d\d\d-\d\d-\d\d\t/mg), 1, "just one date");
 is(scalar(() = $data =~ m/$line/mg), 1, "just one line");
 
+# Add a header
+
+$data = "iInformation\t\t\t\r\n" . $data;
+save_file($updated_list, $data);
+
 # add another phlog
 
 open($fh, ">>", "$site_list") or die "Cannot append to $site_list: $!\n";
@@ -139,6 +144,9 @@ is(scalar(() = $data =~ m/^i\d\d\d\d-\d\d-\d\d\t/mg), 1, "just one date");
 is(scalar(() = $data =~ m/^1/mg), 2, "two menus");
 like($data, qr/i\d\d\d\d-\d\d-\d\d.*\r\n1Other.*\r\n1Test.*\r\n/,
      "order of entries is correct");
+is(scalar(() = $data =~ m/^iInformation/mg), 1, "one header line");
+
+# clean up
 
 unlink($cache) if -f $cache;
 
