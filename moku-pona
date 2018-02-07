@@ -136,7 +136,7 @@ sub add_update {
     push(@block, "i\t\t\t"); # empty line
     for (my $i = 0; $i < @lines; $i++) {
       if ($lines[$i] =~ /^i$date\t/) {
-	$found = $i;
+	$found = $i - 1;
 	last;
       }
     }
