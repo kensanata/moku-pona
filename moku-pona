@@ -150,6 +150,16 @@ sub add_update {
       last;
     }
   }
+  # and remove dates that have no more entries
+  for (my $i =0; $i < @lines; ) {
+    if ($lines[$i] =~ /^i\d\d\d\d-\d\d-\d\d\t/
+	and $lines[$i+1] =~ /^i\t/) {
+      splice(@lines, $i, 2);
+    } else {
+      $i++;
+    }
+  }
+  # save
   save_file($updated_list, join("\r\n", @lines, ""));
 }
 
