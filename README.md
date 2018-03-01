@@ -107,3 +107,8 @@ subscribed to the wrong item.
 Perl modules:
 
 * Modern::Perl
+
+I find using this module is good practice but it isn't strictly
+required so if it isn't installed on your system and you're having a
+hard time installing it, then just get rid of the line that requires
+it. That should be no problem!
