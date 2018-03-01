@@ -103,7 +103,7 @@ sub do_add {
 }
 
 sub do_cleanup {
-  # FIXME
+  warn("This hasn't been implemented, yet. Sorry!");
 }
 
 sub add_update {
