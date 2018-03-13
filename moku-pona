@@ -103,7 +103,36 @@ sub do_add {
 }
 
 sub do_cleanup {
-  warn("This hasn't been implemented, yet. Sorry!");
+  my $confirm = shift||'' eq '--confirm';
+  # get a hash map telling us the cache files we expect based on our sites
+  my $site = load_site();
+  my %caches = map {
+    my ($desc, $selector, $host, $port) = split(/\t/, substr($_, 1));
+    $port += 0;
+    $selector =~ s/\//-/g;
+    "$data_dir/$host-$port-$selector.txt" => 1;
+  } @$site;
+  # get a list of text files in the directory
+  opendir(my $dh, $data_dir)
+      or die "Cannot read $data_dir: $!\n";
+  my @files = map { "$data_dir/$_" }
+      grep { /\.txt$/ && -f "$data_dir/$_" }
+      readdir($dh);
+  closedir($dh);
+  for my $file (@files) {
+    next if $file eq $site_list;
+    next if $file eq $updated_list;
+    next if $caches{$file};
+    if ($confirm) {
+      unlink $file;
+    } else {
+      print "trash $file\n";
+    }
+  }
+  if (!$confirm) {
+    print "\n";
+    print "Use moku-pona cleanup --confirm to do it.\n";
+  }
 }
 
 sub add_update {
@@ -210,7 +239,7 @@ moku-pona list
 
   This lists all the subscribed items.
 
-moku-pona cleanup
+moku-pona cleanup [--confirm]
 
   This deletes all the cached pages that we are no longer subscribed to. These
   are stored in $data_dir.
@@ -227,7 +256,7 @@ sub main {
   my $command = shift(@ARGV) || "help";
   if ($command eq "add") { do_add(@ARGV) }
   elsif ($command eq "list") { do_list() }
-  elsif ($command eq "cleanup") { do_cleanup() }
+  elsif ($command eq "cleanup") { do_cleanup(@ARGV); }
   elsif ($command eq "update") { do_update() }
   else { do_help() }
 }
