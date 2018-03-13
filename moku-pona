@@ -119,6 +119,7 @@ sub do_cleanup {
       grep { /\.txt$/ && -f "$data_dir/$_" }
       readdir($dh);
   closedir($dh);
+  # remove unnecessary cache files
   for my $file (@files) {
     next if $file eq $site_list;
     next if $file eq $updated_list;
@@ -129,6 +130,32 @@ sub do_cleanup {
       print "trash $file\n";
     }
   }
+  # check updates list
+  if (-f $updated_list) {
+    open(my $fh, "<:encoding(UTF-8)", $updated_list)
+	or die "Cannot read $updated_list: $!\n";
+    local $/ = "\r\n";
+    my @lines = <$fh>; # includes info items
+    chomp(@lines);
+    # remove lines that aren't in our site list
+    my %sites = map { $_ => 1 } @$site;
+    my @deletes = grep { /^[^i]/ and not $sites{$_}} @lines;
+    print "Removing these entries from updates:\n"
+	. join("\n", @deletes, "") unless $confirm;
+    @lines = grep { /^i/ or $sites{$_}} @lines;
+    # and remove dates that have no more entries
+    for (my $i = 0; $i < @lines; ) {
+      if ($lines[$i] =~ /^i\d\d\d\d-\d\d-\d\d\t/
+	  and $lines[$i+1] =~ /^i\t/) {
+	splice(@lines, $i, 2);
+      } else {
+	$i++;
+      }
+    }
+    # save
+    save_file($updated_list, join("\r\n", @lines, "")) if $confirm;
+  }
+
   if (!$confirm) {
     print "\n";
     print "Use moku-pona cleanup --confirm to do it.\n";
