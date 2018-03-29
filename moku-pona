@@ -163,57 +163,50 @@ sub do_cleanup {
   }
 }
 
+sub convert {
+  my @lines = @_;
+  my $date;
+  my @result;
+  for (my $i = 0; $i < @lines; $i++) {
+    if ($lines[$i] =~ /^i(\d\d\d\d-\d\d-\d\d)\t/) {
+      $date = $1;
+    } elsif ($date and $lines[$i] =~ /^1(.*)/) {
+      push(@result, "1$date $1");
+    }
+  }
+  return @result;
+}
+
 sub add_update {
   my $line = shift;
+  # add current date
   my ($sec, $min, $hour, $mday, $mon, $year) = gmtime(); # UTC
   my $date = sprintf('%4d-%02d-%02d', $year + 1900, $mon + 1, $mday);
+  $line = substr($line, 0, 1) . $date . " ". substr($line, 1);
+  # load file
   my @lines;
   if (-f $updated_list) {
     open(my $fh, "<:encoding(UTF-8)", $updated_list)
 	or die "Cannot read $updated_list: $!\n";
     local $/ = "\r\n";
-    @lines = <$fh>; # includes info items
+    @lines = <$fh>;
     chomp(@lines);
   }
+  # handle legacy format
+  if (grep(/^i\d\d\d\d-\d\d-\d\d\t/, @lines)) {
+    @lines = convert(@lines);
+  }
   my $found = 0;
-  # first, let's see if we already ran today
-  for (my $i = 0; $i < @lines; $i++) {
-    if ($lines[$i] =~ /^i$date\t/) {
-      splice(@lines, $i + 1, 0, $line);
-      $found = $i + 1;
-      last;
-    }
+  # add it to the front but skip info lines
+  for ($found = 0; $found < @lines; $found++) {
+    last if $lines[$found] !~ /^i/;
   }
-  # if we didn't find the date, add it to the front but skip info lines that
-  # don't look like dates
-  if (not $found) {
-    my @block;
-    push(@block, "i$date\t\t\t");
-    push(@block, $line);
-    push(@block, "i\t\t\t"); # empty line
-    for (my $i = 0; $i < @lines; $i++) {
-      if ($lines[$i] =~ /^i$date\t/) {
-	$found = $i - 1;
-	last;
-      }
-    }
-    splice(@lines, $found, 0, @block);
-    $found += @block;
-  }
+  splice(@lines, $found, 0, $line);
   # and remove any past mentions
+  my $re = substr($line, 0, 1) . '\d\d\d\d-\d\d-\d\d' . substr($line, 11);
   for (my $i = $found + 1; $i < @lines; $i++) {
-    if ($lines[$i] eq $line) {
+    if ($lines[$i] =~ /^$re/) {
       splice(@lines, $i, 1);
-      last;
-    }
-  }
-  # and remove dates that have no more entries
-  for (my $i =0; $i < @lines; ) {
-    if ($lines[$i] =~ /^i\d\d\d\d-\d\d-\d\d\t/
-	and $lines[$i+1] =~ /^i\t/) {
-      splice(@lines, $i, 2);
-    } else {
-      $i++;
     }
   }
   # save
@@ -287,6 +280,7 @@ sub main {
   elsif ($command eq "list") { do_list() }
   elsif ($command eq "cleanup") { do_cleanup(@ARGV); }
   elsif ($command eq "update") { do_update(@ARGV) }
+  elsif ($command eq "convert") { do_convert() }
   else { do_help() }
 }
 

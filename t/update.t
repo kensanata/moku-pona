@@ -99,7 +99,6 @@ unlink($updated_list) if -f $updated_list;
 my $cache = "$data_dir/localhost-$port-selector.txt";
 unlink($cache) if -f $cache;
 
-
 my $site = load_site();
 is(@$site, 1, "$site_list has one line");
 is($site->[0], $line, "entry was added");
@@ -111,8 +110,8 @@ do_update();
 ok(-f $cache, "cache was written");
 
 my $data = load_file($updated_list);
-like($data, qr/^i\d\d\d\d-\d\d-\d\d\t/, "updated list has date");
-like($data, qr/$line/, "updated list has line");
+like($data, qr/^1\d\d\d\d-\d\d-\d\d Test Phlog\tselector\tlocalhost\t$port/,
+     "updated list has line");
 
 # make sure we don't get duplicates
 
@@ -122,8 +121,8 @@ do_update();
 # my $number = () = $string =~ /\./gi;
 
 $data = load_file($updated_list);
-is(scalar(() = $data =~ m/^i\d\d\d\d-\d\d-\d\d\t/mg), 1, "just one date");
-is(scalar(() = $data =~ m/$line/mg), 1, "just one line");
+is(scalar(() = $data =~ m/^1\d\d\d\d-\d\d-\d\d Test Phlog\tselector\tlocalhost\t$port/mg),
+   1, "just one line");
 
 # Add a header
 
@@ -140,9 +139,8 @@ close($fh);
 do_update();
 
 $data = load_file($updated_list);
-is(scalar(() = $data =~ m/^i\d\d\d\d-\d\d-\d\d\t/mg), 1, "just one date");
 is(scalar(() = $data =~ m/^1/mg), 2, "two menus");
-like($data, qr/i\d\d\d\d-\d\d-\d\d.*\r\n1Other.*\r\n1Test.*\r\n/,
+like($data, qr/1\d\d\d\d-\d\d-\d\d Other.*\r\n1\d\d\d\d-\d\d-\d\d Test.*\r\n/,
      "order of entries is correct");
 is(scalar(() = $data =~ m/^iInformation/mg), 1, "one header line");
 
