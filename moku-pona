@@ -221,22 +221,23 @@ sub add_update {
 }
 
 sub do_update {
+  my $quiet = shift||'' eq '--quiet';
   my $site = load_site();
   for my $line (@$site) {
     # skip item type
     my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
     $port += 0;
-    print("Fetching $desc...");
+    print("Fetching $desc...") unless $quiet;
     my $new = query_gopher($selector, $host, $port);
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
     my $old = load_file($cache);
     if ($new ne $old) {
-      print("updated\n");
+      print("updated\n") unless $quiet;
       add_update($line);
       save_file($cache, $new);
     } else {
-      print("unchanged\n");
+      print("unchanged\n") unless $quiet;
     }
   }
 }
@@ -272,7 +273,7 @@ moku-pona cleanup [--confirm]
   This deletes all the cached pages that we are no longer subscribed to. These
   are stored in $data_dir.
 
-moku-pona update
+moku-pona update [--quiet]
 
   This updates all the subscribed items and generates a new local gopher menu
   for you to visit. This menu is available as $updated_list.
@@ -285,7 +286,7 @@ sub main {
   if ($command eq "add") { do_add(@ARGV) }
   elsif ($command eq "list") { do_list() }
   elsif ($command eq "cleanup") { do_cleanup(@ARGV); }
-  elsif ($command eq "update") { do_update() }
+  elsif ($command eq "update") { do_update(@ARGV) }
   else { do_help() }
 }
 

@@ -74,6 +74,9 @@ Enjoy your flight through Gopherspace...
 
 And that's it!
 
+When adding this to a cron job, you might want to use the `--quiet`
+flag to the update command.
+
 ## Fancy Header
 
 You can edit `~/.moku-pona/updates.txt` and add stuff to the top or
