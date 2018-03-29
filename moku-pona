@@ -39,7 +39,7 @@ sub query_gopher {
   my $socket = IO::Socket::IP->new(
     PeerHost => $host,
     PeerPort => $port,
-    Timeout => 30,
+    Timeout  => 30,
     Type     => SOCK_STREAM, )
       or die "Cannot construct client socket to $host:$port: $@\n";
 
