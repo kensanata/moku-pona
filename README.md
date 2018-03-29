@@ -67,9 +67,8 @@ Browse your list of updates:
 $ vf1 ~/.moku-pona/updates.txt 
 Welcome to VF-1!
 Enjoy your flight through Gopherspace...
-2018-02-05
-[1] Tomasino/
-[2] Alex Schroeder/
+[1] 2018-02-05 Tomasino/
+[2] 2018-02-05 Alex Schroeder/
 ```
 
 And that's it!
@@ -83,17 +82,13 @@ You can edit `~/.moku-pona/updates.txt` and add stuff to the top or
 bottom. Just remember that any lines you add must be regular Gopher
 menu items. If they're information, they must must start with "i" and
 end with "\t\t\t\r\n", three tabulators, a carriage return and a
-newline, and the text you add shouldn't look like a date or Moku Pona
-will happily add new lines above it.
+newline.
 
 ## How does it work?
 
 Anytime moku pona fetches a subscribed item, it is saved in
 `~/.moku-pona` unless it is unchanged. If it is new or updated,
-`~/.moku-pona/updates.txt` is updated. Items are placed at the top
-under a date header which is based on the current time, UTC. Any
-previous mention of the item is removed. Thus, every item is just
-listed once, under the date it was last updated.
+`~/.moku-pona/updates.txt` is updated.
 
 ## Limitations
 
@@ -103,7 +98,9 @@ year. If the Gopher menu lists each folder and a date with the latest
 change, then that's great, you can use it. Without it, you're in
 trouble: you need to subscribe to the item for the current year in
 order to see changes, but when the next year comes around, you're
-subscribed to the wrong item.
+subscribed to the wrong item. Sometimes you're lucky and there will be
+a menu somewhere with a timestamp for the last change. Add that page
+and you'll get notified when the timestamp changes.
 
 ## Dependencies
 
