@@ -54,9 +54,9 @@ sub load_site {
   return [] if not -f $site_list;
   open(my $fh, "<:encoding(UTF-8)", $site_list)
       or die "Cannot read $site_list: $!\n";
-  # only allow item type 1: "menu"
   local $/ = "\r\n";
-  my @lines = grep(/^1/, <$fh>);
+  # ignore info lines
+  my @lines = grep(!/^i/, <$fh>);
   chomp(@lines);
   return \@lines;
 }

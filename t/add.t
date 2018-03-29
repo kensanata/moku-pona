@@ -27,4 +27,7 @@ do_add("gopher://gopher.club/1phlogs", "Gopher Club");
 my $site = load_site();
 is(@$site, 1, "$site_list has one line");
 is($site->[0], "1Gopher Club\tphlogs\tgopher.club\t70", "entry was added");
+do_add("gopher://gopher.club/1phlogs2", "Gopher Club2");
+my $site = load_site();
+is(@$site, 2, "$site_list has two lines");
 done_testing();
