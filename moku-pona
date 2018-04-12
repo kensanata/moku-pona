@@ -41,12 +41,23 @@ sub query_gopher {
     PeerPort => $port,
     Timeout  => 30,
     Type     => SOCK_STREAM, )
-      or die "Cannot construct client socket to $host:$port: $@\n";
-
-  $socket->print("$selector\r\n");
-  shutdown($socket, 1);
-  local $/ = undef; # slurp
-  return <$socket>;
+      or warn "Cannot construct client socket to $host:$port: $@\n";
+  return unless $socket;
+  my $result;
+  eval {
+    local $SIG{ALRM} = sub { die "timeout\n"; };
+    alarm 10;
+    $socket->print("$selector\r\n");
+    shutdown($socket, 1);
+    local $/ = undef; # slurp
+    $result = <$socket>;
+    alarm 0;
+  };
+  if ($@) {
+    warn $@;
+    return;
+  }
+  return $result;
 }
 
 sub load_site {
@@ -216,12 +227,14 @@ sub add_update {
 sub do_update {
   my $quiet = shift||'' eq '--quiet';
   my $site = load_site();
+  local $| = 1; # flush
   for my $line (@$site) {
     # skip item type
     my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
     $port += 0;
     print("Fetching $desc...") unless $quiet;
     my $new = query_gopher($selector, $host, $port);
+    next unless defined $new;
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
     my $old = load_file($cache);
