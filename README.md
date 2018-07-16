@@ -76,6 +76,19 @@ And that's it!
 When adding this to a cron job, you might want to use the `--quiet`
 flag to the update command.
 
+## Clean Up
+
+You can simply edit `~/.moku-pona/sites.txt` to add and remove entries
+but there's also a shortcut to remove entries:
+
+```
+$ moku-pona remove "Alex Schroeder"
+Removed 1 subscription
+```
+
+Run `moku-pona cleanup` to get rid of any remaining caches and updates
+you're no longer subscribed to.
+
 ## Fancy Header
 
 You can edit `~/.moku-pona/updates.txt` and add stuff to the top or
