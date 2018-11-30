@@ -277,9 +277,9 @@ sub to_gopher {
   my $nodes = $xpc->findnodes('//atom:entry', $root) || $root->findnodes('//item');
   my @lines;
   for my $node ($nodes->get_nodelist) {
-    my $titles = $xpc->findnodes('./atom:title', $node) || $node->getChildrenByTagName('title');
+    my $titles = $xpc->findnodes('atom:title', $node) || $node->getChildrenByTagName('title');
     my $title = $titles->shift->textContent;
-    my $links = $xpc->findnodes('//gopher:link', $node);
+    my $links = $xpc->findnodes('gopher:link', $node);
     my $link = $links->shift;
     my $href = $link->getAttribute('href') || $link->textContent;
     push(@lines, url_to_gopher($href, $title));
