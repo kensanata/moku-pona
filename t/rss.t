@@ -21,7 +21,6 @@ require "./moku-pona";
 
 my $rss = << 'EOT';
 <rss version="2.0"
-    xmlns:gopher="https://communitywiki.org/wiki/Gopher_Module_1.0"
     xmlns:wiki="http://purl.org/rss/1.0/modules/wiki/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cc="http://web.resource.org/cc/"
@@ -29,7 +28,7 @@ my $rss = << 'EOT';
 <channel>
 <docs>http://blogs.law.harvard.edu/tech/rss</docs>
 <title>Alex Schroeder: Diary</title>
-<gopher:link>gopher://alexschroeder.ch:70/0Diary</gopher:link>
+<link>gopher://alexschroeder.ch:70/0Diary</link>
 <managingEditor>kensanata@gmail.com</managingEditor>
 <webMaster>kensanata@gmail.com</webMaster>
 <atom:link href="gopher://alexschroeder.ch:70/?action=rc" rel="self" type="application/rss+xml" />
@@ -44,12 +43,12 @@ my $rss = << 'EOT';
 <image>
 <url>https://alexschroeder.ch/pics/alex.png</url>
 <title>Alex Schroeder: Diary</title>
-<gopher:link>gopher://alexschroeder.ch:70/</gopher:link>
+<link>gopher://alexschroeder.ch:70/</link>
 </image>
 
 <item>
 <title>Moku Pona and Gopher Feeds</title>
-<gopher:link>gopher://alexschroeder.ch:70/02018-11-30_Moku_Pona_and_Gopher_Feeds</gopher:link>
+<link>gopher://alexschroeder.ch:70/02018-11-30_Moku_Pona_and_Gopher_Feeds</link>
 <guid>gopher://alexschroeder.ch:70/02018-11-30_Moku_Pona_and_Gopher_Feeds</guid>
 <description>I'm adding Gopher feed support to Moku Pona. In this context, a Gopher feed is a Gopher resource that returns a RSS 2.0 or Atom feed with links in the Gopher namespace as defined in the Gopher Module. Gopher Module 1.0 is the technical specification and 2018-11-27 Gopher Module is a blog post of…</description>
 <pubDate>Fri, 30 Nov 2018 14:06:20 GMT</pubDate>
@@ -65,7 +64,7 @@ my $rss = << 'EOT';
 
 <item>
 <title>Ship «Hoffnung»</title>
-<gopher:link>gopher://alexschroeder.ch:70/02018-11-30_Ship_%c2%abHoffnung%c2%bb</gopher:link>
+<link>gopher://alexschroeder.ch:70/02018-11-30_Ship_%c2%abHoffnung%c2%bb</link>
 <guid>gopher://alexschroeder.ch:70/02018-11-30_Ship_%c2%abHoffnung%c2%bb</guid>
 <description>I've continued writing on Cosmic Voyage. ~~~ -+-+-+- Regular Report -+-+-+- C98.204 -+-+-+- Orange      -+-+-+- Dr. med. Ursula Hägi reporting on the second scheduled inspection. The passenger status in cryo sleep is nominal. We have had no failures. My companion for this round is Dr. phys. Hans…</description>
 <pubDate>Fri, 30 Nov 2018 11:21:16 GMT</pubDate>

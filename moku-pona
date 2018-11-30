@@ -272,15 +272,14 @@ sub to_gopher {
   my $dom = XML::LibXML->load_xml(string => $xml);
   my $root = $dom->documentElement();
   my $xpc = XML::LibXML::XPathContext->new;
-  $xpc->registerNs('gopher', 'https://communitywiki.org/wiki/Gopher_Module_1.0');
   $xpc->registerNs('atom', 'http://www.w3.org/2005/Atom');
   my $nodes = $xpc->findnodes('//atom:entry', $root) || $root->findnodes('//item');
   my @lines;
   for my $node ($nodes->get_nodelist) {
     my $titles = $xpc->findnodes('atom:title', $node) || $node->getChildrenByTagName('title');
-    my $title = $titles->shift->textContent;
-    my $links = $xpc->findnodes('gopher:link', $node);
-    my $link = $links->shift;
+    my $title = $titles->shift->textContent; # take the first
+    my $links = $xpc->findnodes('atom:link', $node) || $node->getChildrenByTagName('link');
+    my $link = $links->shift; # take the first
     my $href = $link->getAttribute('href') || $link->textContent;
     push(@lines, url_to_gopher($href, $title));
   }
