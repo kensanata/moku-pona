@@ -50,7 +50,7 @@ our $updated_list = $data_dir . '/updates.txt';
 sub random_port {
   use Errno  qw( EADDRINUSE );
   use Socket qw( PF_INET SOCK_STREAM INADDR_ANY sockaddr_in );
-  
+
   my $family = PF_INET;
   my $type   = SOCK_STREAM;
   my $proto  = getprotobyname('tcp')  or die "getprotobyname: $!";
@@ -78,7 +78,7 @@ END {
   # kill server
   if ($pid) {
     kill 'KILL', $pid or warn "Could not kill server $pid";
-  }  
+  }
 }
 
 if (!defined $pid) {

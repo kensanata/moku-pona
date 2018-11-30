@@ -34,7 +34,7 @@ sub query_gopher {
   my $selector = shift;
   my $host = shift;
   my $port = shift;
-  
+
   # create client
   my $socket = IO::Socket::IP->new(
     PeerHost => $host,
@@ -90,14 +90,11 @@ sub save_file {
   print $fh $data;
 }
 
-sub do_add {
+sub url_to_gopher {
   my $str = shift;
   $str = "gopher://" . $str unless $str =~ /:\/\//;
   my $uri = URI->new($str);
-  if (not $uri->scheme or $uri->scheme !~ /^gophers?$/) {
-    warn("Only gopher URLs allowed\n");
-    return;
-  }
+  return if not $uri->scheme or $uri->scheme !~ /^gophers?$/;
   my $name = shift||$uri;
   my $path = $uri->path;
   $path = substr($path, 1) if substr($path, 0, 1) eq "/";
@@ -105,6 +102,17 @@ sub do_add {
   my $selector = $path ? substr($path, 1) : "";
   my $line = join("\t", $type . $name, $selector,
 		  $uri->host, $uri->port||70);
+  return $line;
+}
+
+sub do_add {
+  my $uri = shift;
+  my $name = shift;
+  my $line = url_to_gopher($uri, $name);
+  if (not $line) {
+    warn("Only gopher URLs allowed\n");
+    return;
+  }
   my $site = load_site();
   if (not grep(/^$line$/, @$site)) {
     push(@$site, $line);
@@ -257,6 +265,28 @@ sub add_update {
   save_file($updated_list, join("\r\n", @lines, ""));
 }
 
+# Convert a RSS or Atom feed to a Gopher map
+sub to_gopher {
+  my $xml = shift;
+  require XML::LibXML;
+  my $dom = XML::LibXML->load_xml(string => $xml);
+  my $root = $dom->documentElement();
+  my $xpc = XML::LibXML::XPathContext->new;
+  $xpc->registerNs('gopher', 'https://communitywiki.org/wiki/Gopher_Module_1.0');
+  $xpc->registerNs('atom', 'http://www.w3.org/2005/Atom');
+  my $nodes = $xpc->findnodes('//atom:entry', $root) || $root->findnodes('//item');
+  my @lines;
+  for my $node ($nodes->get_nodelist) {
+    my $titles = $xpc->findnodes('./atom:title', $node) || $node->getChildrenByTagName('title');
+    my $title = $titles->shift->textContent;
+    my $links = $xpc->findnodes('//gopher:link', $node);
+    my $link = $links->shift;
+    my $href = $link->getAttribute('href') || $link->textContent;
+    push(@lines, url_to_gopher($href, $title));
+  }
+  return join("\n", @lines, "");
+}
+
 sub do_update {
   my $quiet = shift||'' eq '--quiet';
   my $site = load_site();
@@ -270,6 +300,10 @@ sub do_update {
     next unless defined $new;
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
+    if ($new =~ /^<\?xml/) {
+      $new = to_gopher($new);
+      $line = join("\t", '1' . $desc, $cache, "", "");
+    }
     my $old = load_file($cache);
     if ($new ne $old) {
       print("updated\n") unless $quiet;

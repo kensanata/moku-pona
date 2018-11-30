@@ -119,6 +119,10 @@ and you'll get notified when the timestamp changes.
 
 Perl modules:
 
+* XML::LibXML
+
+This is required (together with libxml2) in order to parse feeds.
+
 * Modern::Perl
 
 I find using this module is good practice but it isn't strictly
