@@ -117,15 +117,16 @@ and you'll get notified when the timestamp changes.
 
 ## Dependencies
 
-Perl modules:
+I'm listing the Perl module if you're installing them via `cpan` or
+`cpanm`, and the Debian package if you're installing them via `apt`.
 
-* XML::LibXML
+* XML::LibXML (libxml-libxml-perl) is optional, used to parse RSS or
+  Atom feeds. This requires the libxml2 library as a dependency. Thus,
+  if you build it yourself, you need a package like libxml2-dev, and
+  if you install the package, it should install libxml2 as a
+  dependency.
 
-This is required (together with libxml2) in order to parse feeds.
-
-* Modern::Perl
-
-I find using this module is good practice but it isn't strictly
-required so if it isn't installed on your system and you're having a
-hard time installing it, then just get rid of the line that requires
-it. That should be no problem!
+* Modern::Perl (libmodern-perl-perl) is good practice but it isn't
+  strictly required so if it isn't installed on your system and you're
+  having a hard time installing it, then just get rid of the line that
+  uses it. That should be no problem!
