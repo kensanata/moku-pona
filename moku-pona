@@ -299,9 +299,10 @@ sub do_update {
     next unless defined $new;
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
+    my $relsel = "$host-$port-$selector.txt";
     if ($new =~ /^<\?xml/) {
       $new = to_gopher($new);
-      $line = join("\t", '1' . $desc, $cache, "", "");
+      $line = join("\t", '1' . $desc, $relsel, "", "");
     }
     my $old = load_file($cache);
     if ($new ne $old) {
