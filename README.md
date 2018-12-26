@@ -103,6 +103,15 @@ Anytime moku pona fetches a subscribed item, it is saved in
 `~/.moku-pona` unless it is unchanged. If it is new or updated,
 `~/.moku-pona/updates.txt` is updated.
 
+## Change the data directory
+
+If you set the environment variable `MOKU_PONA` then it's value will
+be used as the data directory.
+
+```
+MOKU_PONA=/var/gopher/moku-pona moku-pona update
+```
+
 ## Limitations
 
 It only detects changes. Thus, if there is an item that points to a

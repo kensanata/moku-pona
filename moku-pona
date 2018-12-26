@@ -20,7 +20,9 @@ use URI;
 # This is our directory. Every gopher URL we subscribe to will generate a file
 # in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
 # detect changes. We cannot rely on feeds.
-our $data_dir = ($ENV{HOME} || $ENV{LOGDIR}) . '/.moku-pona';
+our $data_dir = $ENV{MOKU_PONA};
+$data_dir ||= $ENV{HOME} . '/.moku-pona' if $ENV{HOME};
+$data_dir ||= $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR};
 
 # This is a gopher map listing all the pages being watched whih means that you
 # can view using a gopher client. Or you can add it to your gopher site for
