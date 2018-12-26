@@ -87,6 +87,9 @@ if (!defined $pid) {
   server->run(port => $port);
 }
 
+# give it time to start
+sleep(1);
+
 # setup
 
 open(my $fh, ">", "$site_list") or die "Cannot write $site_list: $!\n";
