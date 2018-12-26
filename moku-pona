@@ -20,8 +20,15 @@ use URI;
 # This is our directory. Every gopher URL we subscribe to will generate a file
 # in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
 # detect changes. We cannot rely on feeds.
-our $data_dir = ($ENV{HOME} || $ENV{LOGDIR}) . '/.moku-pona';
-our $site_root = '' || $data_dir; # $site_root = '/moku-pona' as example
+
+our $data_dir = $ENV{MOKU_PONA};
+$data_dir ||= $ENV{HOME} . '/.moku-pona' if $ENV{HOME};
+$data_dir ||= $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR};
+
+# This is an overridable root for links generated in the updates.txt file. If a
+# rss feed is detected, a link to the generated gophermap will default to the 
+# $data_dir unless you override it here. '/moku-pona' as an example
+our $site_root = '' || $data_dir;
 
 # This is a gopher map listing all the pages being watched whih means that you
 # can view using a gopher client. Or you can add it to your gopher site for
@@ -97,7 +104,7 @@ sub url_to_gopher {
   my $uri = URI->new($str);
   return if not $uri->scheme or $uri->scheme !~ /^gophers?$/;
   my $name = shift||$uri;
-  my $path = $uri->path;
+  my $path = $uri->path_query;
   $path = substr($path, 1) if substr($path, 0, 1) eq "/";
   my $type = $path ? substr($path, 0, 1) : "1";
   my $selector = $path ? substr($path, 1) : "";
