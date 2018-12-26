@@ -98,7 +98,7 @@ sub url_to_gopher {
   my $uri = URI->new($str);
   return if not $uri->scheme or $uri->scheme !~ /^gophers?$/;
   my $name = shift||$uri;
-  my $path = $uri->path;
+  my $path = $uri->path_query;
   $path = substr($path, 1) if substr($path, 0, 1) eq "/";
   my $type = $path ? substr($path, 0, 1) : "1";
   my $selector = $path ? substr($path, 1) : "";
