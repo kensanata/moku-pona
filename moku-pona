@@ -21,6 +21,7 @@ use URI;
 # in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
 # detect changes. We cannot rely on feeds.
 our $data_dir = ($ENV{HOME} || $ENV{LOGDIR}) . '/.moku-pona';
+our $site_root = '' || $data_dir; # $site_root = '/moku-pona' as example
 
 # This is a gopher map listing all the pages being watched whih means that you
 # can view using a gopher client. Or you can add it to your gopher site for
@@ -299,7 +300,7 @@ sub do_update {
     next unless defined $new;
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
-    my $relsel = "$host-$port-$selector.txt";
+    my $relsel = "$site_root/$host-$port-$selector.txt";
     if ($new =~ /^<\?xml/) {
       $new = to_gopher($new);
       $line = join("\t", '1' . $desc, $relsel, "", "");
