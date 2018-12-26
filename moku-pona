@@ -15,6 +15,7 @@
 
 use Modern::Perl;
 use IO::Socket::IP;
+use Mojo::File;
 use URI;
 
 # This is our directory. Every gopher URL we subscribe to will generate a file
@@ -316,6 +317,31 @@ sub do_update {
   }
 }
 
+sub do_publish {
+  my $target = shift;
+  die "Target $target is not a directory\n" unless -d $target;
+  die "Source $site_list does not exist\n" unless -f $site_list;
+  die "Source $updated_list does not exist\n" unless -f $updated_list;
+  my $path;
+  # copy two files
+  $path = Mojo::File->new($site_list);
+  $path->copy_to("$target/sites.txt");
+  $path = Mojo::File->new($updated_list);
+  $path->copy_to("$target/updates.txt");
+  open(my $fh, "<:encoding(UTF-8)", $updated_list)
+      or die "Cannot read $updated_list: $!\n";
+  local $/ = "\r\n";
+  for my $line (<$fh>) {
+    my @fields = split(/\t/, $line);
+    my $from = $fields[1];
+    my $file = $from;
+    if ($file =~ s/^$data_dir\///) {
+      $path = Mojo::File->new($from);
+      $path->copy_to("$target/$file");
+    }
+  }
+}
+
 sub do_list {
   my $site = load_site();
   print("Subscribed items in $site_list:\n");
@@ -362,6 +388,14 @@ moku-pona update [--quiet]
   This updates all the subscribed items and generates a new local gopher menu
   for you to visit. This menu is available as $updated_list.
 
+moku-pona publish <directory>
+
+  This takes the important files from your data directory and copies them to a
+  target directory. This is useful if you're publishing your feeds. You could
+  just use symlinks but if you have an actuall *feed* in your subscriptions,
+  that won't work as the cached file needs to be copied as well (and the links
+  need to be changed, too).
+
 EOF
 }
 
@@ -373,6 +407,7 @@ sub main {
   elsif ($command eq "cleanup") { do_cleanup(@ARGV); }
   elsif ($command eq "update") { do_update(@ARGV) }
   elsif ($command eq "convert") { do_convert() }
+  elsif ($command eq "publish") { do_publish(@ARGV) }
   else { do_help() }
 }
 

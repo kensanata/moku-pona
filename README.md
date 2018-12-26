@@ -139,3 +139,5 @@ I'm listing the Perl module if you're installing them via `cpan` or
   strictly required so if it isn't installed on your system and you're
   having a hard time installing it, then just get rid of the line that
   uses it. That should be no problem!
+
+* Mojo::File (libmojolicious-perl) is used when publishing.
