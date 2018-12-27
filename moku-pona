@@ -334,6 +334,7 @@ sub do_publish {
   for my $line (<$fh>) {
     my @fields = split(/\t/, $line);
     my $from = $fields[1];
+    next unless $from;
     my $file = $from;
     if ($file =~ s/^$data_dir\///) {
       $path = Mojo::File->new($from);
