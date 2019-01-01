@@ -127,7 +127,8 @@ and you'll get notified when the timestamp changes.
 ## Dependencies
 
 I'm listing the Perl module if you're installing them via `cpan` or
-`cpanm`, and the Debian package if you're installing them via `apt`.
+`cpanm`, and the Debian package if you're installing them via `apt
+install`.
 
 * XML::LibXML (libxml-libxml-perl) is optional, used to parse RSS or
   Atom feeds. This requires the libxml2 library as a dependency. Thus,
@@ -141,3 +142,23 @@ I'm listing the Perl module if you're installing them via `cpan` or
   uses it. That should be no problem!
 
 * Mojo::File (libmojolicious-perl) is used when publishing.
+
+## If you don't know Perl
+
+Your system probably comes with a minimal Perl. You should try to
+install all the modules listed above using your system's packet
+manager. If you want more control, here's what I do:
+
+1. Don't install things using `sudo`. All your Perl stuff should be in
+   `~/perl5`. This requires changes to your PATH environment variable,
+   and the setting of a PERL5LIB environment variable. The
+   installation of the tools below should set this up for you.
+
+2. Install `perlbrew` which allows you to install multiple versions of
+   Perl and to switch between them. Eventually you're going to need
+   this if you're releasing code that needs to be backwards
+   compatible. How else are you going to reproduce bug reports?
+
+3. Perl comes with `cpan` to install libraries, but I actually prefer
+   `cpanm` which is part of `App::cpanminus`. So use `cpan` to install
+   `App::cpanminus`, and from then on use `cpanm` to install things.
