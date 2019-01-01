@@ -51,6 +51,7 @@ sub query_gopher {
     local $SIG{ALRM} = sub { die "timeout\n"; };
     alarm 10;
     $socket->print("$selector\r\n");
+    sleep(1);
     shutdown($socket, 1);
     local $/ = undef; # slurp
     $result = <$socket>;
