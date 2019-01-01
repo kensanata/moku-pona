@@ -299,7 +299,10 @@ sub do_update {
     $port += 0;
     print("Fetching $desc...") unless $quiet;
     my $new = query_gopher($selector, $host, $port);
-    next unless defined $new;
+    if (not $new) {
+      warn("$desc returned an empty document\n");
+      next;
+    }
     $selector =~ s/\//-/g;
     my $cache = "$data_dir/$host-$port-$selector.txt";
     if ($new =~ /^<\?xml/) {
