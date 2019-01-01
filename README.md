@@ -141,8 +141,6 @@ install`.
   having a hard time installing it, then just get rid of the line that
   uses it. That should be no problem!
 
-* Mojo::File (libmojolicious-perl) is used when publishing.
-
 ## If you don't know Perl
 
 Your system probably comes with a minimal Perl. You should try to

@@ -15,7 +15,7 @@
 
 use Modern::Perl;
 use IO::Socket::IP;
-use Mojo::File;
+use File::Copy qw(copy);
 use URI;
 
 # This is our directory. Every gopher URL we subscribe to will generate a file
@@ -326,23 +326,27 @@ sub do_publish {
   die "Source $site_list does not exist\n" unless -f $site_list;
   die "Source $updated_list does not exist\n" unless -f $updated_list;
   my $path;
-  # copy two files
-  $path = Mojo::File->new($site_list);
-  $path->copy_to("$target/sites.txt");
-  $path = Mojo::File->new($updated_list);
-  $path->copy_to("$target/updates.txt");
-  open(my $fh, "<:encoding(UTF-8)", $updated_list)
+  # copy site list
+  copy($site_list, "$target/sites.txt");
+  # copy updates but with local links for the feed files
+  open(my $in, "<:encoding(UTF-8)", $updated_list)
       or die "Cannot read $updated_list: $!\n";
+  open(my $out, ">:encoding(UTF-8)", "$target/updates.txt")
+      or die "Cannot write $target/updates.txt: $!\n";
   local $/ = "\r\n";
-  for my $line (<$fh>) {
+  for my $line (<$in>) {
     my @fields = split(/\t/, $line);
     my $from = $fields[1];
-    next unless $from;
-    my $file = $from;
-    if ($file =~ s/^$data_dir\///) {
-      $path = Mojo::File->new($from);
-      $path->copy_to("$target/$file");
+    my $to = $fields[1];
+    # if the target is a local file, then that's because it is the result of a
+    # to_gopher call in do_update, so we need to copy it as well, and we need to
+    # change the line in updates.txt so that it no longer points to our
+    # (private) data directory
+    if ($to =~ s/^$data_dir\///) {
+      copy($from, "$target/$to");
+      $fields[1] = $to;
     }
+    print $out join("\t", @fields) . $/;
   }
 }
 
@@ -408,7 +412,7 @@ sub main {
   if ($command eq "add") { do_add(@ARGV) }
   elsif ($command eq "remove") { do_remove(@ARGV) }
   elsif ($command eq "list") { do_list() }
-  elsif ($command eq "cleanup") { do_cleanup(@ARGV); }
+  elsif ($command eq "cleanup") { do_cleanup(@ARGV) }
   elsif ($command eq "update") { do_update(@ARGV) }
   elsif ($command eq "convert") { do_convert() }
   elsif ($command eq "publish") { do_publish(@ARGV) }
