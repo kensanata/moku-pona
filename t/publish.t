@@ -16,7 +16,6 @@
 package server;
 
 use Modern::Perl;
-use Mojo::File;
 use Test::More;
 
 require "./moku-pona";
@@ -30,16 +29,32 @@ my $file = 'alexschroeder.ch-70-do-rss.txt';
 mkdir($target) unless -d $target;
 unlink("$target/$file") if -f "$target/$file";
 
-my $path = Mojo::File->new("$data_dir/$file");
-$path->spurt("0Lifting a rock\t2012-01-27_Lifting_a_rock\talexschroeder.ch\t70\r\n");
+my $fh;
 
-my $updates = Mojo::File->new($updated_list);
-$updates->spurt("12018-12-26 Alex RSS\t$data_dir/$file\t\t\r\n");
+open($fh, ">", "$data_dir/$file");
+print $fh "0Lifting a rock\t2012-01-27_Lifting_a_rock\talexschroeder.ch\t70\r\n";
+close $fh;
+
+open($fh, ">", $updated_list);
+print $fh "12018-12-26 Alex RSS\t$data_dir/$file\t\t\r\n";
+close $fh;
 
 do_publish($target);
 
 for my $f (qw(sites.txt updates.txt), $file) {
   ok(-f "$target/$f", "$f was published");
 }
+
+local $/;
+
+open($fh, "<", $updated_list);
+my $found = grep(/$data_dir/, <$fh>);
+close $fh;
+ok($found, "Found data dir in the old updates.txt");
+
+open($fh, "<", "$target/updates.txt");
+my $found = grep(/$data_dir/, <$fh>);
+close $fh;
+ok(!$found, "Data dir not found in the new updates.txt");
 
 done_testing();
