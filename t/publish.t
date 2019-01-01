@@ -53,7 +53,7 @@ close $fh;
 ok($found, "Found data dir in the old updates.txt");
 
 open($fh, "<", "$target/updates.txt");
-my $found = grep(/$data_dir/, <$fh>);
+$found = grep(/$data_dir/, <$fh>);
 close $fh;
 ok(!$found, "Data dir not found in the new updates.txt");
 
