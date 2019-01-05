@@ -336,6 +336,7 @@ sub do_publish {
       or die "Cannot write $target/updates.txt: $!\n";
   local $/ = "\r\n";
   for my $line (<$in>) {
+    chomp($line);
     my @fields = split(/\t/, $line);
     my $from = $fields[1];
     my $to = $fields[1];

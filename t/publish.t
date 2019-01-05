@@ -26,6 +26,9 @@ our $updated_list = $data_dir . '/updates.txt';
 my $target = 'target';
 my $file = 'alexschroeder.ch-70-do-rss.txt';
 
+$/ = "\r\n";
+my @lines;
+
 mkdir($target) unless -d $target;
 unlink("$target/$file") if -f "$target/$file";
 
@@ -45,16 +48,20 @@ for my $f (qw(sites.txt updates.txt), $file) {
   ok(-f "$target/$f", "$f was published");
 }
 
-local $/;
-
 open($fh, "<", $updated_list);
-my $found = grep(/$data_dir/, <$fh>);
+@lines = <$fh>;
 close $fh;
+
+my $found = grep(/$data_dir/, @lines);
 ok($found, "Found data dir in the old updates.txt");
 
 open($fh, "<", "$target/updates.txt");
-$found = grep(/$data_dir/, <$fh>);
+@lines = <$fh>;
 close $fh;
+
+$found = grep(/$data_dir/, @lines);
 ok(!$found, "Data dir not found in the new updates.txt");
+
+is(scalar(@lines), 1, "updates.txt contains just one line");
 
 done_testing();
