@@ -272,8 +272,14 @@ sub add_update {
 # Convert a RSS or Atom feed to a Gopher map
 sub to_gopher {
   my $xml = shift;
-  require XML::LibXML;
-  my $dom = XML::LibXML->load_xml(string => $xml);
+  my $dom = eval {
+    require XML::LibXML;
+    XML::LibXML->load_xml(string => $xml);
+  };
+  if ($@) {
+    warn "$@\n";
+    return '';
+  }
   my $root = $dom->documentElement();
   my $xpc = XML::LibXML::XPathContext->new;
   $xpc->registerNs('atom', 'http://www.w3.org/2005/Atom');
