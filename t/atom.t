@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+# Copyright (C) 2018–2020  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -100,10 +100,10 @@ Tags: #typed-on-ux50 #federation #hosting #comingsoon
 EOT
 
 my $expected = << 'EOT';
-0# The 1436-Files	/Phlog/20181130.post	leveck.us	70
-0# On Projects [Nov2018] 	/Phlog/20181129.post	leveck.us	70
+=> gopher://leveck.us/0/Phlog/20181130.post # The 1436-Files
+=> gopher://leveck.us/0/Phlog/20181129.post # On Projects [Nov2018]
 EOT
 
-is(to_gopher($atom), $expected, "Parsing Atom");
+is(to_gemini($atom), $expected, "Parsing Atom");
 
 done_testing();

@@ -14,6 +14,7 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 use Test::More;
+use Encode qw(decode_utf8);
 
 require "./moku-pona";
 
@@ -21,15 +22,26 @@ our $data_dir = 'test';
 our $site_list = $data_dir . '/sites.txt';
 our $updated_list = $data_dir . '/updates.txt';
 
+sub to_string {
+  my $sub_ref = shift;
+  my $output;
+  open(my $outputFH, '>:encoding(UTF-8)', \$output) or die "Can't open memory file: $!";
+  my $oldFH = select $outputFH;
+  $sub_ref->(@_);
+  select $oldFH;
+  close $outputFH;
+  return decode_utf8($output);
+}
+
 unlink $site_list if -f $site_list;
-is(scalar(@{load_site()}), 0, "$site_list is empty");
+is(scalar(@{load_site()}), 0, "$site_list starts out empty");
 my $url = "gopher://gopher.club/1phlogs";
 my $name = "Gopher Club";
 do_add($url, $name);
-my $site = load_site();
-is(@$site, 1, "$site_list has one line");
-is($site->[0], "=> $url $name", "entry was added");
 do_add("$url-2", "$name-2");
 my $site = load_site();
-is(@$site, 2, "$site_list has two lines");
+is(@$site, 2, "after adding two entries, $site_list has two lines");
+my $text = to_string(\&do_list);
+like($text, qr(moku-pona add gopher://gopher.club/1phlogs "Gopher Club"), "First site is listed");
+like($text, qr(moku-pona add gopher://gopher.club/1phlogs-2 "Gopher Club-2"), "Second site is listed");
 done_testing();

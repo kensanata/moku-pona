@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+# Copyright (C) 2018–2020  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -24,9 +24,8 @@ our $data_dir = 'test';
 our $site_list = $data_dir . '/sites.txt';
 our $updated_list = $data_dir . '/updates.txt';
 my $target = 'target';
-my $file = 'alexschroeder.ch-70-do-rss.txt';
+my $file = 'gopher:--alexschroeder.ch:70-do-rss';
 
-$/ = "\r\n";
 my @lines;
 
 mkdir($target) unless -d $target;
@@ -35,11 +34,11 @@ unlink("$target/$file") if -f "$target/$file";
 my $fh;
 
 open($fh, ">", "$data_dir/$file");
-print $fh "0Lifting a rock\t2012-01-27_Lifting_a_rock\talexschroeder.ch\t70\r\n";
+print $fh "=> gopher://alexschroeder.ch:70/12012-01-27_Lifting_a_rock\n";
 close $fh;
 
 open($fh, ">", $updated_list);
-print $fh "12018-12-26 Alex RSS\t$data_dir/$file\t\t\r\n";
+print $fh "=> file:///$file 2018-12-26 Alex RSS\n";
 close $fh;
 
 do_publish($target);
@@ -52,8 +51,8 @@ open($fh, "<", $updated_list);
 @lines = <$fh>;
 close $fh;
 
-my $found = grep(/$data_dir/, @lines);
-ok($found, "Found data dir in the old updates.txt");
+my $found = grep(/file:/, @lines);
+ok($found, "Found file URL in the old updates.txt");
 
 open($fh, "<", "$target/updates.txt");
 @lines = <$fh>;

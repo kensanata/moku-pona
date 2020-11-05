@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+# Copyright (C) 2018–2020  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -66,6 +66,6 @@ my $rss = << 'EOT';
 </rss>
 EOT
 
-is(to_gopher($rss), '', "Not dying on an error while parsing invalid RSS 2.0");
+is(to_gemini($rss), '', "Not dying on an error while parsing invalid RSS 2.0");
 
 done_testing();

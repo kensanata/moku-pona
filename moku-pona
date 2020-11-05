@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+# Copyright (C) 2018–2020  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -14,18 +14,22 @@
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
 use Modern::Perl;
+use IO::Socket::SSL;
 use IO::Socket::IP;
 use File::Copy qw(copy);
 use URI;
 
-# This is our directory. Every gopher URL we subscribe to will generate a file
-# in this directory, eg. 'alexschroeder.ch:70'. We need this because we need to
+# Optional (used when subscribing to feeds: XML::LibXML)
+
+# This is our cache directory. Every Gopher or Gemini URL we subscribe to will
+# generate a file in this directory, eg. 'gopher:--alexschroeder.ch:70' (the URL
+# with all the slashes replaced by a hyphen). We need this because we need to
 # detect changes. We cannot rely on feeds.
 our $data_dir = $ENV{MOKU_PONA};
 $data_dir ||= $ENV{HOME} . '/.moku-pona' if $ENV{HOME};
 $data_dir ||= $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR};
 
-# This is a gopher map listing all the pages being watched whih means that you
+# This is a gopher map listing all the pages being watched which means that you
 # can view using a gopher client. Or you can add it to your gopher site for
 # others to see.
 our $site_list = $data_dir . '/sites.txt';
@@ -33,11 +37,31 @@ our $site_list = $data_dir . '/sites.txt';
 # This is the generated list with all the updates.
 our $updated_list = $data_dir . '/updates.txt';
 
+sub query_gemini {
+  my $url = shift;
+  my($scheme, $authority, $path, $query, $fragment) =
+      $url =~ m|(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?|;
+  die "⚠ The URL '$url' must use the gemini scheme\n" unless $scheme and $scheme eq 'gemini';
+  die "⚠ The URL '$url' must have an authority\n" unless $authority;
+  my ($host, $port) = split(/:/, $authority, 2);
+  $port //= 1965;
+  my $socket = IO::Socket::SSL->new(
+    PeerHost => $host,
+    PeerService => $port,
+    SSL_verify_mode => SSL_VERIFY_NONE)
+      or die "Cannot construct client socket: $@";
+  # send data in one go
+  print $socket "$url\r\n";
+  # read response
+  undef $/;
+  my ($header, $response) = split(/\r\n/, <$socket>, 2);
+  return $response;
+}
+
 sub query_gopher {
   my $selector = shift;
   my $host = shift;
   my $port = shift;
-
   # create client
   my $socket = IO::Socket::IP->new(
     PeerHost => $host,
@@ -64,15 +88,38 @@ sub query_gopher {
   return $result;
 }
 
+sub url_to_gopher {
+  my $str = shift;
+  $str = "gopher://" . $str unless $str =~ /:\/\//;
+  my $uri = URI->new($str);
+  return if not $uri->scheme or $uri->scheme !~ /^gophers?$/;
+  my $name = shift||$uri;
+  my $path = $uri->path_query;
+  $path = substr($path, 1) if substr($path, 0, 1) eq "/";
+  my $type = $path ? substr($path, 0, 1) : "1";
+  my $selector = $path ? substr($path, 1) : "";
+  return ($selector, $uri->host, $uri->port||70);
+}
+
+sub convert {
+  for (@_) {
+    next if /^=> /; # is already a gemini link
+    my ($type, $desc, $selector, $host, $port) = /^([^\t])([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t]*)/;
+    if ($host and $port) {
+      $port //= 0;
+      $_ = "=> gopher://$host:$port/$type$selector $desc";
+    }
+  }
+  return @_;
+}
+
 sub load_site {
-  my $file = shift;
-  return [] if not -f $site_list;
-  open(my $fh, "<:encoding(UTF-8)", $site_list)
-      or die "Cannot read $site_list: $!\n";
-  local $/ = "\r\n";
-  # ignore info lines
-  my @lines = grep(!/^i/, <$fh>);
+  my $file = $site_list;
+  return [] if not -f $file;
+  open(my $fh, "<:encoding(UTF-8)", $file) or die "Cannot read $file: $!\n";
+  my @lines = <$fh>;
   chomp(@lines);
+  @lines = grep(/^=> /, convert(@lines)); # from gopher
   return \@lines;
 }
 
@@ -81,7 +128,7 @@ sub load_file {
   return "" if not -f $file;
   open(my $fh, "<:encoding(UTF-8)", $file)
       or die "Cannot read $file: $!\n";
-  local $/ = undef; # slurp
+  local $/ = undef;
   return <$fh>;
 }
 
@@ -94,36 +141,18 @@ sub save_file {
   print $fh $data;
 }
 
-sub url_to_gopher {
-  my $str = shift;
-  $str = "gopher://" . $str unless $str =~ /:\/\//;
-  my $uri = URI->new($str);
-  return if not $uri->scheme or $uri->scheme !~ /^gophers?$/;
-  my $name = shift||$uri;
-  my $path = $uri->path_query;
-  $path = substr($path, 1) if substr($path, 0, 1) eq "/";
-  my $type = $path ? substr($path, 0, 1) : "1";
-  my $selector = $path ? substr($path, 1) : "";
-  my $line = join("\t", $type . $name, $selector,
-		  $uri->host, $uri->port||70);
-  return $line;
-}
-
 sub do_add {
   my $uri = shift;
   my $name = shift;
-  my $line = url_to_gopher($uri, $name);
-  if (not $line) {
-    warn("Only gopher URLs allowed\n");
-    return;
-  }
+  $name ||= $uri;
+  my $line = "=> $uri $name";
   my $site = load_site();
-  if (not grep(/^$line$/, @$site)) {
+  if (not grep(/^=> $uri /, @$site)) {
     push(@$site, $line);
   } else {
     warn("$uri already exists in $site_list\n");
   }
-  save_file($site_list, join("\r\n", @$site, ""));
+  save_file($site_list, join("\n", @$site, ""));
 }
 
 sub do_remove {
@@ -133,11 +162,11 @@ sub do_remove {
   my $i = 0;
   while (@args and $i < @$site) {
     my $line = $site->[$i];
-    my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
+    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
     my $found = 0;
     my $j = 0;
     while ($j < @args) {
-      if ($desc eq $args[$j]) {
+      if ($name eq $args[$j]) {
 	$count++;
 	$found = 1;
 	splice(@$site, $i, 1); # remove the site found
@@ -151,7 +180,7 @@ sub do_remove {
   if ($count) {
     printf("Removed %d %s\n", $count,
 	   $count == 1 ? "subscription" : "subscriptions");
-    save_file($site_list, join("\r\n", @$site, ""));
+    save_file($site_list, join("\n", @$site, ""));
   } else {
     warn("No subscriptions matching @args found\n");
     warn("Use moku-pona list to find the correct descriptions.\n");
@@ -164,17 +193,15 @@ sub do_cleanup {
   # get a hash map telling us the cache files we expect based on our sites
   my $site = load_site();
   my %caches = map {
-    my ($desc, $selector, $host, $port) = split(/\t/, substr($_, 1));
-    $port += 0;
-    $selector =~ s/\//-/g;
-    "$data_dir/$host-$port-$selector.txt" => 1;
+    my ($uri, $name) = /^=> (\S+)\s+(.*)/;
+    $uri =~ s/\//-/g;
+    "$data_dir/$uri" => 1;
   } @$site;
   # get a list of text files in the directory
-  opendir(my $dh, $data_dir)
-      or die "Cannot read $data_dir: $!\n";
-  my @files = map { "$data_dir/$_" }
-      grep { /\.txt$/ && -f "$data_dir/$_" }
-      readdir($dh);
+  opendir(my $dh, $data_dir) or die "Cannot read $data_dir: $!\n";
+  my @files = map { s/\//-/g; "$data_dir/$_" }
+    grep { /^[a-z]+:/ && -f "$data_dir/$_" }
+    readdir($dh);
   closedir($dh);
   # remove unnecessary cache files
   for my $file (@files) {
@@ -192,15 +219,14 @@ sub do_cleanup {
   if (-f $updated_list) {
     open(my $fh, "<:encoding(UTF-8)", $updated_list)
 	or die "Cannot read $updated_list: $!\n";
-    local $/ = "\r\n";
-    my @lines = <$fh>; # includes info items
+    my @lines = <$fh>;
     chomp(@lines);
     # decide what to do about each line in updates, ignoring the date
     my %sites = map { $_ => 1 } @$site;
     my @deletes;
     my @keeps;
     for my $line (@lines) {
-      if ($line =~ /^1\d\d\d\d-\d\d-\d\d (.+)/ and not $sites{"1$1"}) {
+      if ($line =~ /^=> (\S+) \d\d\d\d-\d\d-\d\d (.+)/ and not $sites{"=> $1 $2"}) {
 	push(@deletes, $line);
 	$todo++;
       } else {
@@ -210,27 +236,12 @@ sub do_cleanup {
     print "Removing these entries from updates:\n"
 	. join("\n", @deletes, "") if @deletes and not $confirm;
     # save
-    save_file($updated_list, join("\r\n", @keeps, "")) if $confirm;
+    save_file($updated_list, join("\n", @keeps, "")) if $confirm;
   }
-
   if ($todo && !$confirm) {
     print "\n";
     print "Use moku-pona cleanup --confirm to do it.\n";
   }
-}
-
-sub convert {
-  my @lines = @_;
-  my $date;
-  my @result;
-  for (my $i = 0; $i < @lines; $i++) {
-    if ($lines[$i] =~ /^i(\d\d\d\d-\d\d-\d\d)\t/) {
-      $date = $1;
-    } elsif ($date and $lines[$i] =~ /^1(.*)/) {
-      push(@result, "1$date $1");
-    }
-  }
-  return @result;
 }
 
 sub add_update {
@@ -238,43 +249,40 @@ sub add_update {
   # add current date
   my ($sec, $min, $hour, $mday, $mon, $year) = gmtime(); # UTC
   my $date = sprintf('%4d-%02d-%02d', $year + 1900, $mon + 1, $mday);
-  $line = substr($line, 0, 1) . $date . " ". substr($line, 1);
+  my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+  $line = "=> $uri $date $name";
   # load file
   my @lines;
   if (-f $updated_list) {
     open(my $fh, "<:encoding(UTF-8)", $updated_list)
 	or die "Cannot read $updated_list: $!\n";
-    local $/ = "\r\n";
-    @lines = <$fh>;
+    @lines = convert(<$fh>); # from gohper
     chomp(@lines);
   }
-  # handle legacy format
-  if (grep(/^i\d\d\d\d-\d\d-\d\d\t/, @lines)) {
-    @lines = convert(@lines);
-  }
   my $found = 0;
-  # add it to the front but skip info lines
+  # add it to the front but skip non-links
   for ($found = 0; $found < @lines; $found++) {
-    last if $lines[$found] !~ /^i/;
+    last if $lines[$found] =~ /^=>/;
   }
   splice(@lines, $found, 0, $line);
   # and remove any past mentions
-  my $re = substr($line, 0, 1) . '\d\d\d\d-\d\d-\d\d' . substr($line, 11);
+  my $re = "=> " . quotemeta($uri) . ' \d\d\d\d-\d\d-\d\d ' . quotemeta($name);
   for (my $i = $found + 1; $i < @lines; $i++) {
     if ($lines[$i] =~ /^$re/) {
       splice(@lines, $i, 1);
     }
   }
   # save
-  save_file($updated_list, join("\r\n", @lines, ""));
+  save_file($updated_list, join("\n", @lines, ""));
 }
 
-# Convert a RSS or Atom feed to a Gopher map
-sub to_gopher {
+# Convert a RSS or Atom feed to Gemini
+sub to_gemini {
   my $xml = shift;
   my $dom = eval {
     require XML::LibXML;
-    XML::LibXML->load_xml(string => $xml);
+    my $parser = XML::LibXML->new(recover => 2); # no errors, no warnings
+    $parser->load_xml(string => $xml);
   };
   if ($@) {
     warn "$@\n";
@@ -288,10 +296,13 @@ sub to_gopher {
   for my $node ($nodes->get_nodelist) {
     my $titles = $xpc->findnodes('atom:title', $node) || $node->getChildrenByTagName('title');
     my $title = $titles->shift->textContent; # take the first
+    $title =~ s/\s+$//; # trim right
+    $title =~ s/^\s+//; # trim left
     my $links = $xpc->findnodes('atom:link', $node) || $node->getChildrenByTagName('link');
+    next unless $links;
     my $link = $links->shift; # take the first
     my $href = $link->getAttribute('href') || $link->textContent;
-    push(@lines, url_to_gopher($href, $title));
+    push(@lines, "=> $href $title");
   }
   return join("\n", @lines, "");
 }
@@ -301,20 +312,26 @@ sub do_update {
   my $site = load_site();
   local $| = 1; # flush
   for my $line (@$site) {
-    # skip item type
-    my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
-    $port += 0;
-    print("Fetching $desc...") unless $quiet;
-    my $new = query_gopher($selector, $host, $port);
-    if (not $new) {
-      warn("$desc returned an empty document\n");
+    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+    print("Fetching $name...") unless $quiet;
+    my $new;
+    if ($uri =~ /^gopher/) {
+      $new = query_gopher(url_to_gopher($uri));
+    } elsif ($uri =~ /^gemini/) {
+      $new = query_gemini($uri);
+    } else {
+      warn "Skipping $uri...\n";
       next;
     }
-    $selector =~ s/\//-/g;
-    my $cache = "$data_dir/$host-$port-$selector.txt";
+    if (not $new) {
+      warn("$name returned an empty document\n");
+      next;
+    }
+    $uri =~ s/\//-/g;
+    my $cache = "$data_dir/$uri";
     if ($new =~ /^<\?xml/) {
-      $new = to_gopher($new);
-      $line = join("\t", '1' . $desc, $cache, "", "");
+      $new = to_gemini($new);
+      $line = "=> file:///$uri $name"; # now referring to the local cache file
     }
     my $old = load_file($cache);
     if ($new ne $old) {
@@ -340,21 +357,17 @@ sub do_publish {
       or die "Cannot read $updated_list: $!\n";
   open(my $out, ">:encoding(UTF-8)", "$target/updates.txt")
       or die "Cannot write $target/updates.txt: $!\n";
-  local $/ = "\r\n";
   for my $line (<$in>) {
     chomp($line);
-    my @fields = split(/\t/, $line);
-    my $from = $fields[1];
-    my $to = $fields[1];
+    ($line) = convert($line);
+    my ($uri, $name) = $line =~ /^=> file:\/\/\/(\S+)\s+(.*)/;
     # if the target is a local file, then that's because it is the result of a
-    # to_gopher call in do_update, so we need to copy it as well, and we need to
-    # change the line in updates.txt so that it no longer points to our
-    # (private) data directory
-    if ($to =~ s/^$data_dir\///) {
-      copy($from, "$target/$to");
-      $fields[1] = $to;
+    # to_gemini call in do_update, so we need to copy it as well
+    $uri =~ s/\//-/g;
+    if (-f "$data_dir/$uri") {
+      copy("$data_dir/$uri", "$target/$uri");
     }
-    print $out join("\t", @fields) . $/;
+    print $out "$line\n";
   }
 }
 
@@ -364,28 +377,25 @@ sub do_list {
   print("none\n") unless @$site;
   for my $line (@$site) {
     # skip item type
-    my ($desc, $selector, $host, $port) = split(/\t/, substr($line, 1));
-    if ($selector) {
-      print(qq{moku-pona add $host:$port/1$selector "$desc"\n});
-    } else {
-      print(qq{moku-pona add $host:$port "$desc"\n});
-    }
+    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+    print(qq{moku-pona add $uri "$name"\n});
   }
 }
 
 sub do_help {
   print <<"EOF";
-moku-pona add gopher-url [description]
+moku-pona add url [description]
 
-  This adds a gopher URL to the list of subscribed items. These are stored in
+  This adds a Gemini or Gopher URL to the list of subscribed items. If the
+  target is an Atom or RSS feed, then that's also supported. These are stored in
   $site_list. You can provide an optional description for this URL. If you don't
   provide a description, the URL will be used as the item's description.
 
-  Example: moku-pona add alexschroeder.ch kensanata
+  Example: moku-pona add gemini://alexschroeder.ch kensanata
 
 moku-pona remove description
 
-  This removes one or more gopher URL from the list of subscribed items. These
+  This removes one or more URLs from the list of subscribed items. These
   are stored in $site_list.
 
   Example: moku-pona remove kensanata
@@ -401,16 +411,15 @@ moku-pona cleanup [--confirm]
 
 moku-pona update [--quiet]
 
-  This updates all the subscribed items and generates a new local gopher menu
-  for you to visit. This menu is available as $updated_list.
+  This updates all the subscribed items and generates a new local page for you
+  to visit. This menu is available as $updated_list.
 
 moku-pona publish <directory>
 
   This takes the important files from your data directory and copies them to a
   target directory. This is useful if you're publishing your feeds. You could
   just use symlinks but if you have an actuall *feed* in your subscriptions,
-  that won't work as the cached file needs to be copied as well (and the links
-  need to be changed, too).
+  that won't work as the cached file needs to be copied as well.
 
 EOF
 }

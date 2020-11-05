@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+# Copyright (C) 2018–2020  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -92,19 +92,26 @@ sleep(1);
 
 # setup
 
+if (-d $data_dir) {
+  opendir(my $dh, $data_dir) or die "Cannot open $data_dir";
+  my @files = map { "$data_dir/$_" } grep { /^[a-z]/ } readdir($dh);
+  closedir($dh);
+  unlink(@files);
+}
+
 open(my $fh, ">", "$site_list") or die "Cannot write $site_list: $!\n";
 my $line = "1Test Phlog\tselector\tlocalhost\t$port";
-print $fh $line . "\r\n";
+print $fh "$line\n";
 close($fh);
 
 unlink($updated_list) if -f $updated_list;
 
-my $cache = "$data_dir/localhost-$port-selector.txt";
+my $cache = "$data_dir/gopher:--localhost:$port-1selector";
 unlink($cache) if -f $cache;
 
 my $site = load_site();
 is(@$site, 1, "$site_list has one line");
-is($site->[0], $line, "entry was added");
+is($site->[0], "=> gopher://localhost:$port/1selector Test Phlog", "entry was added");
 
 # first test
 
@@ -113,8 +120,8 @@ do_update();
 ok(-f $cache, "cache was written");
 
 my $data = load_file($updated_list);
-like($data, qr/^1\d\d\d\d-\d\d-\d\d Test Phlog\tselector\tlocalhost\t$port/,
-     "updated list has line");
+my $re = qr/=> gopher:\/\/localhost:$port\/1selector \d\d\d\d-\d\d-\d\d Test Phlog/;
+like($data, $re, "updated list has line");
 
 # make sure we don't get duplicates
 
@@ -124,28 +131,27 @@ do_update();
 # my $number = () = $string =~ /\./gi;
 
 $data = load_file($updated_list);
-is(scalar(() = $data =~ m/^1\d\d\d\d-\d\d-\d\d Test Phlog\tselector\tlocalhost\t$port/mg),
-   1, "just one line");
+is(scalar(() = $data =~ m/$re/mg), 1, "just one line");
 
 # Add a header
 
-$data = "iInformation\t\t\t\r\n" . $data;
+$data = "# Information\n" . $data;
 save_file($updated_list, $data);
 
 # add another phlog
 
 open($fh, ">>", "$site_list") or die "Cannot append to $site_list: $!\n";
 $line = "1Other Phlog\tother\tlocalhost\t$port";
-print $fh $line . "\r\n";
+print $fh "$line\n";
 close($fh);
 
 do_update();
 
 $data = load_file($updated_list);
-is(scalar(() = $data =~ m/^1/mg), 2, "two menus");
-like($data, qr/1\d\d\d\d-\d\d-\d\d Other.*\r\n1\d\d\d\d-\d\d-\d\d Test.*\r\n/,
-     "order of entries is correct");
-is(scalar(() = $data =~ m/^iInformation/mg), 1, "one header line");
+is(scalar(() = $data =~ m/=>/g), 2, "two menus");
+$re = qr/=> gopher:\/\/localhost:$port\/1(selector|other) \d\d\d\d-\d\d-\d\d (Test|Other) Phlog/;
+like($data, $re, "order of entries is correct");
+is(scalar(() = $data =~ m/# Information/g), 1, "one header line");
 
 # clean up
 

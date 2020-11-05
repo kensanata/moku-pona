@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-# Copyright (C) 2018  Alex Schroeder <alex@gnu.org>
+# Copyright (C) 2018–2020  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
 # the terms of the GNU General Public License as published by the Free Software
@@ -83,10 +83,10 @@ my $rss = << 'EOT';
 EOT
 
 my $expected = << 'EOT';
-0Moku Pona and Gopher Feeds	2018-11-30_Moku_Pona_and_Gopher_Feeds	alexschroeder.ch	70
-0Ship «Hoffnung»	2018-11-30_Ship_%c2%abHoffnung%c2%bb	alexschroeder.ch	70
+=> gopher://alexschroeder.ch:70/02018-11-30_Moku_Pona_and_Gopher_Feeds Moku Pona and Gopher Feeds
+=> gopher://alexschroeder.ch:70/02018-11-30_Ship_%c2%abHoffnung%c2%bb Ship «Hoffnung»
 EOT
 
-is(to_gopher($rss), $expected, "Parsing RSS 2.0");
+is(to_gemini($rss), $expected, "Parsing RSS 2.0");
 
 done_testing();
