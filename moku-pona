@@ -199,9 +199,7 @@ sub do_cleanup {
   } @$site;
   # get a list of text files in the directory
   opendir(my $dh, $data_dir) or die "Cannot read $data_dir: $!\n";
-  my @files = map { s/\//-/g; "$data_dir/$_" }
-    grep { /^[a-z]+:/ && -f "$data_dir/$_" }
-    readdir($dh);
+  my @files = map { "$data_dir/$_" } grep { /^[^.]/ } readdir($dh);
   closedir($dh);
   # remove unnecessary cache files
   for my $file (@files) {
