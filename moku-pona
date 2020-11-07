@@ -13,29 +13,138 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
+=encoding utf8
+
+=head1 Moku Pona
+
+Moku Pona a Gemini based feed reader. It can monitor URLs to feeds or regular
+pages for changes and keeps and updated list of these in a Gemini list.
+
+You manage your subscriptions using the command-line, with Moku Pona.
+
+You read the resulting file using your Gemini client.
+
+Moku Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
+
+=head2 Limitations
+
+Moku Pona only detects changes. Thus, if there is an item that points to a phlog
+or blog, that's great. Sometimes people put their phlog in a folder per year. If
+the Gopher menu lists each folder and a date with the latest change, then that's
+great, you can use it. Without it, you're in trouble: you need to subscribe to
+the item for the current year in order to see changes, but when the next year
+comes around, you're subscribed to the wrong item. Sometimes you're lucky and
+there will be a menu somewhere with a timestamp for the last change. Use that
+instead. Good luck!
+
+=head2 Dependencies
+
+There are some Perl dependencies you need to satisfy in order to run this
+program:
+
+=over
+
+=item L<Modern::Perl>, or C<libmodern-perl-perl>
+
+=item L<IO::Socket::SSL>, or C<libio-socket-ssl-perl>
+
+=item L<Mojo::UserAgent>, or C<libmojolicious-perl>
+
+=item L<XML::LibXML>, or C<libxml-libxml-perl>
+
+=item L<URI>, or C<liburi-perl>
+
+=back
+
+=cut
+
 use Modern::Perl;
 use IO::Socket::SSL;
 use IO::Socket::IP;
 use File::Copy qw(copy);
+use Mojo::UserAgent;
+use XML::LibXML;
 use URI;
 
-# Optional (used when subscribing to feeds: XML::LibXML)
+=head2 The Data Directory
 
-# This is our cache directory. Every Gopher or Gemini URL we subscribe to will
-# generate a file in this directory, eg. 'gopher:--alexschroeder.ch:70' (the URL
-# with all the slashes replaced by a hyphen). We need this because we need to
-# detect changes. We cannot rely on feeds.
+Moku Pona keeps the list of URLs you are subscribed to in directory. It's
+probably C<~/.moku-pona> on your system.
+
+=over
+
+=item If you have C<MOKU_PONA> environment variable set, then that's your data
+directory.
+
+=item If you don't, but you have the C<HOME> environment variable set (this is
+what usually happens), then your data directory is C<$HOME/.moku-pona>.
+
+=item The last option is to have the C<LOGDIR> environment variable set.
+
+=back
+
+The data directory contains a copy of the latest resources. The names of these
+cache files are simply the URL with all the slashes replaced by a hyphen.
+
+=cut
+
 our $data_dir = $ENV{MOKU_PONA};
 $data_dir ||= $ENV{HOME} . '/.moku-pona' if $ENV{HOME};
 $data_dir ||= $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR};
 
-# This is a gopher map listing all the pages being watched which means that you
-# can view using a gopher client. Or you can add it to your gopher site for
-# others to see.
+=pod
+
+The C<sites.txt> file is a file containing a gemtext list of links, i.e. entries
+such as these:
+
+    => gemini://alexschroeder.ch Alex Schroeder
+
+=cut
+
 our $site_list = $data_dir . '/sites.txt';
 
-# This is the generated list with all the updates.
+=pod
+
+The C<updates.txt> file is a file containing a gemtext list of links based on
+C<sites.txt>, but with a timestamp of their last change, and with new updates
+moved to the top. The ISO date is simply inserted after the URL:
+
+    => gemini://alexschroeder.ch 2020-11-07 Alex Schroeder
+
+=cut
+
 our $updated_list = $data_dir . '/updates.txt';
+
+=pod
+
+In order to be at least somewhat backwards compatible with Moku Pona versions
+1.1 and earlier, C<sites.txt> may contain Gopher menu items. These are converted
+to Gemini URLs during processing and thus the C<updates.txt> file still contains
+regular gemtext.
+
+    1Alex Schroeder ⭾ ⭾ alexschroeder.ch ⭾ 70
+
+=cut
+
+sub convert {
+  for (@_) {
+    next if /^=> /; # is already a gemini link
+    my ($type, $desc, $selector, $host, $port) = /^([^\t])([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t\r]*)/;
+    if ($host and $port) {
+      $port //= 0;
+      $_ = "=> gopher://$host:$port/$type$selector $desc";
+    }
+  }
+  return @_;
+}
+
+=pod
+
+As was said above, however, the recommended format is the use of URLs. Moku Pona
+supports Gemini, Gopher, and the web (gemini, gopher, gophers, http, and https
+schemes).
+
+=cut
 
 sub query_gemini {
   my $url = shift;
@@ -101,17 +210,25 @@ sub url_to_gopher {
   return ($selector, $uri->host, $uri->port||70);
 }
 
-sub convert {
-  for (@_) {
-    next if /^=> /; # is already a gemini link
-    my ($type, $desc, $selector, $host, $port) = /^([^\t])([^\t]*)\t([^\t]*)\t([^\t]*)\t([^\t\r]*)/;
-    if ($host and $port) {
-      $port //= 0;
-      $_ = "=> gopher://$host:$port/$type$selector $desc";
-    }
-  }
-  return @_;
+sub query_web {
+  my $url = shift;
+  my $ua = Mojo::UserAgent->new;
+  my $res = $ua->get($url)->result;
+  return decode_utf8($res->body) if $res->is_success;
+  warn "Cannot fetch $url: $res->code $res->message\n";
 }
+
+=head2 Migration from 1.1
+
+The best way to migrate your setup is probably to use the C<list> subcommand
+explained later, and to recreate your list of subscriptions. Then your
+C<sites.txt> file will use gemtext format.
+
+    moku-pona list > commands
+    mv ~/.moku-pona/sites.txt ~/.moku-pona/sites.txt~
+    sh commands
+
+=cut
 
 sub load_site {
   my $file = $site_list;
@@ -141,6 +258,36 @@ sub save_file {
   print $fh $data;
 }
 
+=head2 List your subscriptions
+
+=cut
+
+sub do_list {
+  my $site = load_site();
+  print("Subscribed items in $site_list:\n");
+  print("none\n") unless @$site;
+  for my $line (@$site) {
+    # skip item type
+    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+    print(qq{moku-pona add $uri "$name"\n});
+  }
+}
+
+=head2 Add a subscription
+
+    moku-pona add url [description]
+
+This adds a URL to the list of subscribed items. If the target is an Atom or RSS
+feed, then that's also supported. You can provide an optional description for
+this URL. If you don't provide a description, the URL will be used as the item's
+description.
+
+Example:
+
+    moku-pona add gemini://alexschroeder.ch kensanata
+
+=cut
+
 sub do_add {
   my $uri = shift;
   my $name = shift;
@@ -154,6 +301,18 @@ sub do_add {
   }
   save_file($site_list, join("\n", @$site, ""));
 }
+
+=head2 Remove a subscription
+
+    moku-pona remove description
+
+This removes one or more URLs from the list of subscribed items.
+
+Example:
+
+    moku-pona remove kensanata
+
+=cut
 
 sub do_remove {
   my @args = @_;
@@ -186,6 +345,27 @@ sub do_remove {
     warn("Use moku-pona list to find the correct descriptions.\n");
   }
 }
+
+=head2 Clean up the data directory
+
+    moku-pona cleanup [--confirm]
+
+When Moku Pona updates, copies of the URL targets are saved in the data
+directory. If you remove a subscription (see above), that leaves a cache file in
+the data directory that is no longer used – and it leaves an entry in
+C<updates.txt> that is no longer wanted. The cleanup command fixes this. It
+deletes all the cached pages that you are no longer subscribed to, and it
+removes those entries from C<updates.txt> as well.
+
+Actually, just to be sure, if you run it without the C<--confirm> argument, it
+simply prints which files it would trash. Rerun it with the C<--confirm>
+argument to actually do it.
+
+Example:
+
+    moku-pona cleanup
+
+=cut
 
 sub do_cleanup {
   my $confirm = shift||'' eq '--confirm';
@@ -242,6 +422,29 @@ sub do_cleanup {
   }
 }
 
+=head2 Update
+
+    moku-pona update [--quiet]
+
+This updates all the subscribed items and generates a new local page for you to
+visit: C<updates.txt>.
+
+Example:
+
+    moku-pona update
+
+If you call it from a cron job, you might want to use the C<--quiet> argument to
+prevent it from printing all the sites it's contacting (since cron will then
+mail this to you and you might not care for it unless there's a problem). If
+there's a problem, you'll still get a message.
+
+This is how I call it from my C<crontab>, for example
+
+    #m   h  dom mon dow   command
+    11 7,14 *   *   *     /home/alex/bin/moku-pona update --quiet
+
+=cut
+
 sub add_update {
   my $line = shift;
   # add current date
@@ -274,7 +477,26 @@ sub add_update {
   save_file($updated_list, join("\n", @lines, ""));
 }
 
-# Convert a RSS or Atom feed to Gemini
+=head2 Subscribing to feeds
+
+When the result of an update is an XML document, then it is parsed and the links
+of its items (if RSS) or entries (if Atom) are extracted and saved in the cache
+file in the data directory. The effect is this:
+
+=over
+
+=item If you subscribe to a regular page, then the link to it in C<updates.txt>
+moves to the top when it changes.
+
+=item If you subscribe to a feed, then the link in C<updates.txt> moves to the
+top when it changes and it links to a file in the data directory that links to
+the individual items in the feed.
+
+=back
+
+=cut
+
+# Convert a RSS or Atom feed to Gemini links
 sub to_gemini {
   my $xml = shift;
   my $dom = eval {
@@ -317,8 +539,10 @@ sub do_update {
       $new = query_gopher(url_to_gopher($uri));
     } elsif ($uri =~ /^gemini/) {
       $new = query_gemini($uri);
+    } elsif ($uri =~ /^http/) {
+      $new = query_web($uri);
     } else {
-      warn "Skipping $uri...\n";
+      warn "Don't know how to fetch $uri\n";
       next;
     }
     if (not $new) {
@@ -341,6 +565,21 @@ sub do_update {
     }
   }
 }
+
+=head2 Publishing your subscription
+
+    moku-pona publish <directory>
+
+This takes the important files from your data directory and copies them to a
+target directory. You could just use symbolic links for C<sites.txt> and
+C<updates.txt>, of course. But if you've subscribed to actual feeds as described
+above, then the cache files need to get copied as well!
+
+Example:
+
+    moku-pona publish ~/subs
+
+=cut
 
 sub do_publish {
   my $target = shift;
@@ -369,57 +608,9 @@ sub do_publish {
   }
 }
 
-sub do_list {
-  my $site = load_site();
-  print("Subscribed items in $site_list:\n");
-  print("none\n") unless @$site;
-  for my $line (@$site) {
-    # skip item type
-    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
-    print(qq{moku-pona add $uri "$name"\n});
-  }
-}
-
 sub do_help {
-  print <<"EOF";
-moku-pona add url [description]
-
-  This adds a Gemini or Gopher URL to the list of subscribed items. If the
-  target is an Atom or RSS feed, then that's also supported. These are stored in
-  $site_list. You can provide an optional description for this URL. If you don't
-  provide a description, the URL will be used as the item's description.
-
-  Example: moku-pona add gemini://alexschroeder.ch kensanata
-
-moku-pona remove description
-
-  This removes one or more URLs from the list of subscribed items. These
-  are stored in $site_list.
-
-  Example: moku-pona remove kensanata
-
-moku-pona list
-
-  This lists all the subscribed items.
-
-moku-pona cleanup [--confirm]
-
-  This deletes all the cached pages that we are no longer subscribed to. These
-  are stored in $data_dir.
-
-moku-pona update [--quiet]
-
-  This updates all the subscribed items and generates a new local page for you
-  to visit. This menu is available as $updated_list.
-
-moku-pona publish <directory>
-
-  This takes the important files from your data directory and copies them to a
-  target directory. This is useful if you're publishing your feeds. You could
-  just use symlinks but if you have an actuall *feed* in your subscriptions,
-  that won't work as the cached file needs to be copied as well.
-
-EOF
+  my $parser = Pod::Text->new();
+  $parser->parse_file($0);
 }
 
 sub main {

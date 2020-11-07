@@ -1,162 +1,170 @@
 # Moku Pona
 
-Moku Pona will visit a set of gopher items you provided and add these
-to a gopher map if they changed since the last time you looked at
-them.
+Moku Pona a Gemini based feed reader. It can monitor URLs to feeds or regular
+pages for changes and keeps and updated list of these in a Gemini list.
 
-## Usage
+You manage your subscriptions using the command-line, with Moku Pona.
 
-List the sites you are subscribed to:
+You read the resulting file using your Gemini client.
 
-```
-$ ./moku-pona list
-Subscribed items in /home/alex/.moku-pona/sites.txt:
-none
-```
+Moku Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
 
-This makes sense. So lets add some:
+**Table of Contents**
 
-```
-$ ./moku-pona add gopher://alexschroeder.ch "Alex Schroeder"
-$ ./moku-pona add gopher://sdf.org/1/users/tomasino/phlog Tomasino
-```
-
-Check the list:
-
-```
-$ ./moku-pona list
-Subscribed items in /home/alex/.moku-pona/sites.txt:
-moku-pona add alexschroeder.ch:70 "Alex Schroeder"
-moku-pona add sdf.org:70/1/users/tomasino/phlog "Tomasino"
-```
-
-Notice how this makes it easier to share your subscriptions with
-others as they can just run it from the shell.
-
-Use a Gopher client like [VF-1](https://github.com/solderpunk/VF-1) to
-browse the same list:
-
-```
-$ vf1 ~/.moku-pona/sites.txt 
-Welcome to VF-1!
-Enjoy your flight through Gopherspace...
-[1] Alex Schroeder/
-[2] Tomasino/
-VF-1> 
-```
-
-Update your subscriptions:
-
-```
-$ ./moku-pona update
-Fetching Alex Schroeder...updated
-Fetching Tomasino...updated
-```
-
-Do it again:
-
-```
-$ ./moku-pona update
-Fetching Alex Schroeder...unchanged
-Fetching Tomasino...unchanged
-```
-
-Browse your list of updates:
-
-```
-$ vf1 ~/.moku-pona/updates.txt 
-Welcome to VF-1!
-Enjoy your flight through Gopherspace...
-[1] 2018-02-05 Tomasino/
-[2] 2018-02-05 Alex Schroeder/
-```
-
-And that's it!
-
-When adding this to a cron job, you might want to use the `--quiet`
-flag to the update command.
-
-## Clean Up
-
-You can simply edit `~/.moku-pona/sites.txt` to add and remove entries
-but there's also a shortcut to remove entries:
-
-```
-$ moku-pona remove "Alex Schroeder"
-Removed 1 subscription
-```
-
-Run `moku-pona cleanup` to get rid of any remaining caches and updates
-you're no longer subscribed to.
-
-## Fancy Header
-
-You can edit `~/.moku-pona/updates.txt` and add stuff to the top or
-bottom. Just remember that any lines you add must be regular Gopher
-menu items. If they're information, they must must start with "i" and
-end with "\t\t\t\r\n", three tabulators, a carriage return and a
-newline.
-
-## How does it work?
-
-Anytime moku pona fetches a subscribed item, it is saved in
-`~/.moku-pona` unless it is unchanged. If it is new or updated,
-`~/.moku-pona/updates.txt` is updated.
-
-## Change the data directory
-
-If you set the environment variable `MOKU_PONA` then it's value will
-be used as the data directory.
-
-```
-MOKU_PONA=/var/gopher/moku-pona moku-pona update
-```
-
-## Limitations
-
-It only detects changes. Thus, if there is an item that points to a
-phlog, that's great. Sometimes people put their phlog in a folder per
-year. If the Gopher menu lists each folder and a date with the latest
-change, then that's great, you can use it. Without it, you're in
-trouble: you need to subscribe to the item for the current year in
-order to see changes, but when the next year comes around, you're
-subscribed to the wrong item. Sometimes you're lucky and there will be
-a menu somewhere with a timestamp for the last change. Add that page
-and you'll get notified when the timestamp changes.
+- [Dependencies](#dependencies)
+- [The Data Directory](#the-data-directory)
+- [Migration from 1.1](#migration-from-1-1)
+- [List your subscriptions](#list-your-subscriptions)
+- [Add a subscription](#add-a-subscription)
+- [Remove a subscription](#remove-a-subscription)
+- [Clean up the data directory](#clean-up-the-data-directory)
+- [Update](#update)
+- [Subscribing to feeds](#subscribing-to-feeds)
+- [Publishing your subscription](#publishing-your-subscription)
 
 ## Dependencies
 
-I'm listing the Perl module if you're installing them via `cpan` or
-`cpanm`, and the Debian package if you're installing them via `apt
-install`.
+There are some Perl dependencies you need to satisfy in order to run this
+program:
 
-* XML::LibXML (libxml-libxml-perl) is optional, used to parse RSS or
-  Atom feeds. This requires the libxml2 library as a dependency. Thus,
-  if you build it yourself, you need a package like libxml2-dev, and
-  if you install the package, it should install libxml2 as a
-  dependency.
+- [Modern::Perl](https://metacpan.org/pod/Modern%3A%3APerl), or `libmodern-perl-perl`
+- [IO::Socket::SSL](https://metacpan.org/pod/IO%3A%3ASocket%3A%3ASSL), or `libio-socket-ssl-perl`
+- [Mojo::UserAgent](https://metacpan.org/pod/Mojo%3A%3AUserAgent), or `libmojolicious-perl`
+- [XML::LibXML](https://metacpan.org/pod/XML%3A%3ALibXML), or `libxml-libxml-perl`
+- [URI](https://metacpan.org/pod/URI), or `liburi-perl`
 
-* Modern::Perl (libmodern-perl-perl) is good practice but it isn't
-  strictly required so if it isn't installed on your system and you're
-  having a hard time installing it, then just get rid of the line that
-  uses it. That should be no problem!
+## The Data Directory
 
-## If you don't know Perl
+Moku Pona keeps the list of URLs you are subscribed to in directory. It's
+probably `~/.moku-pona` on your system.
 
-Your system probably comes with a minimal Perl. You should try to
-install all the modules listed above using your system's packet
-manager. If you want more control, here's what I do:
+- If you have `MOKU_PONA` environment variable set, then that's your data
+directory.
+- If you don't, but you have the `HOME` environment variable set (this is
+what usually happens), then your data directory is `$HOME/.moku-pona`.
+- The last option is to have the `LOGDIR` environment variable set.
 
-1. Don't install things using `sudo`. All your Perl stuff should be in
-   `~/perl5`. This requires changes to your PATH environment variable,
-   and the setting of a PERL5LIB environment variable. The
-   installation of the tools below should set this up for you.
+The data directory contains a copy of the latest resources. The names of these
+cache files are simply the URL with all the slashes replaced by a hyphen.
 
-2. Install `perlbrew` which allows you to install multiple versions of
-   Perl and to switch between them. Eventually you're going to need
-   this if you're releasing code that needs to be backwards
-   compatible. How else are you going to reproduce bug reports?
+The `sites.txt` file is a file containing a gemtext list of links, i.e. entries
+such as these:
 
-3. Perl comes with `cpan` to install libraries, but I actually prefer
-   `cpanm` which is part of `App::cpanminus`. So use `cpan` to install
-   `App::cpanminus`, and from then on use `cpanm` to install things.
+    => gemini://alexschroeder.ch Alex Schroeder
+
+The `updates.txt` file is a file containing a gemtext list of links based on
+`sites.txt`, but with a timestamp of their last change, and with new updates
+moved to the top. The ISO date is simply inserted after the URL:
+
+    => gemini://alexschroeder.ch 2020-11-07 Alex Schroeder
+
+In order to be at least somewhat backwards compatible with Moku Pona versions
+1.1 and earlier, `sites.txt` may contain Gopher menu items. These are converted
+to Gemini URLs during processing and thus the `updates.txt` file still contains
+regular gemtext.
+
+    1Alex Schroeder ⭾ ⭾ alexschroeder.ch ⭾ 70
+
+As was said above, however, the recommended format is the use of URLs. Moku Pona
+supports Gemini, Gopher, and the web (gemini, gopher, gophers, http, and https
+schemes).
+
+## Migration from 1.1
+
+The best way to migrate your setup is probably to use the `list` subcommand
+explained later, and to recreate your list of subscriptions. Then your
+`sites.txt` file will use gemtext format.
+
+    moku-pona list > commands
+    mv ~/.moku-pona/sites.txt ~/.moku-pona/sites.txt~
+    sh commands
+
+## List your subscriptions
+
+## Add a subscription
+
+    moku-pona add url [description]
+
+This adds a URL to the list of subscribed items. If the target is an Atom or RSS
+feed, then that's also supported. You can provide an optional description for
+this URL. If you don't provide a description, the URL will be used as the item's
+description.
+
+Example:
+
+    moku-pona add gemini://alexschroeder.ch kensanata
+
+## Remove a subscription
+
+    moku-pona remove description
+
+This removes one or more URLs from the list of subscribed items.
+
+Example:
+
+    moku-pona remove kensanata
+
+## Clean up the data directory
+
+    moku-pona cleanup [--confirm]
+
+When Moku Pona updates, copies of the URL targets are saved in the data
+directory. If you remove a subscription (see above), that leaves a cache file in
+the data directory that is no longer used – and it leaves an entry in
+`updates.txt` that is no longer wanted. The cleanup command fixes this. It
+deletes all the cached pages that you are no longer subscribed to, and it
+removes those entries from `updates.txt` as well.
+
+Actually, just to be sure, if you run it without the `--confirm` argument, it
+simply prints which files it would trash. Rerun it with the `--confirm`
+argument to actually do it.
+
+Example:
+
+    moku-pona cleanup
+
+## Update
+
+    moku-pona update [--quiet]
+
+This updates all the subscribed items and generates a new local page for you to
+visit: `updates.txt`.
+
+Example:
+
+    moku-pona update
+
+If you call it from a cron job, you might want to use the `--quiet` argument to
+prevent it from printing all the sites it's contacting (since cron will then
+mail this to you and you might not care for it unless there's a problem). If
+there's a problem, you'll still get a message.
+
+This is how I call it from my `crontab`, for example
+
+    #m   h  dom mon dow   command
+    11 7,14 *   *   *     /home/alex/bin/moku-pona update --quiet
+
+## Subscribing to feeds
+
+When the result of an update is an XML document, then it is parsed and the links
+of its items (if RSS) or entries (if Atom) are extracted and saved in the cache
+file in the data directory. The effect is this:
+
+- If you subscribe to a regular page, then the link to it in `updates.txt`
+moves to the top when it changes.
+- If you subscribe to a feed, then the link in `updates.txt` moves to the
+top when it changes and it links to a file in the data directory that links to
+the individual items in the feed.
+
+## Publishing your subscription
+
+    moku-pona publish <directory>
+
+This takes the important files from your data directory and copies them to a
+target directory. You could just use symbolic links for `sites.txt` and
+`updates.txt`, of course. But if you've subscribed to actual feeds as described
+above, then the cache files need to get copied as well!
+
+Example:
+
+    moku-pona publish ~/subs
