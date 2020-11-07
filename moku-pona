@@ -495,6 +495,23 @@ the individual items in the feed.
 
 =back
 
+Example:
+
+    moku-pona add https://campaignwiki.org/rpg/feed.xml "RPG"
+    moku-pona update
+
+This adds the RPG entry to C<updates.txt> as follows:
+
+    => https:--campaignwiki.org-rpg-feed.xml 2020-11-07 RPG
+
+And if you check the file C<https:--campaignwiki.org-rpg-feed.xml>, you'll see
+that it's a regular Gemini list. You'll find 100 links like the following:
+
+    => https://alexschroeder.ch/wiki/2020-11-05_Episode_34 Episode 34
+
+Now use C<moku-pona publish> (see below) to move the files to the correct
+directory where your Gemini server expects them.
+
 =cut
 
 # Convert a RSS or Atom feed to Gemini links
@@ -554,7 +571,7 @@ sub do_update {
     my $cache = "$data_dir/$uri";
     if ($new =~ /^<\?xml/) {
       $new = to_gemini($new);
-      $line = "=> file:///$uri $name"; # now referring to the local cache file
+      $line = "=> $uri $name"; # now referring to the local cache file
     }
     my $old = load_file($cache);
     if ($new ne $old) {
