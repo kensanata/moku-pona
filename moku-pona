@@ -52,6 +52,8 @@ program:
 
 =item L<XML::LibXML>, or C<libxml-libxml-perl>
 
+=item =item L<URI::Escape>, or C<liburi-escape-xs-perl>
+
 =item L<URI>, or C<liburi-perl>
 
 =back
@@ -65,6 +67,7 @@ use File::Copy qw(copy);
 use Encode qw(decode_utf8);
 use Mojo::UserAgent;
 use XML::LibXML;
+use URI::Escape;
 use URI;
 
 =head2 The Data Directory
@@ -502,7 +505,7 @@ Example:
 
 This adds the RPG entry to C<updates.txt> as follows:
 
-    => https:--campaignwiki.org-rpg-feed.xml 2020-11-07 RPG
+    => https%3A--campaignwiki.org-rpg-feed.xml 2020-11-07 RPG
 
 And if you check the file C<https:--campaignwiki.org-rpg-feed.xml>, you'll see
 that it's a regular Gemini list. You'll find 100 links like the following:
@@ -571,6 +574,7 @@ sub do_update {
     my $cache = "$data_dir/$uri";
     if ($new =~ /^<\?xml/) {
       $new = to_gemini($new);
+      $uri = uri_escape_utf8($uri);
       $line = "=> $uri $name"; # now referring to the local cache file
     }
     my $old = load_file($cache);
