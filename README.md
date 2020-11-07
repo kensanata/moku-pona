@@ -203,10 +203,10 @@ Example:
 
 ## Serving your subscriptions via Gemini
 
-This depends entirely on your Gemini server. If like it really simple, you can
-use `Lupa Pona`. It comes with it's own documentation. Here's how to create the
-certificate and key files, copy them to the `~/subs` directory created above,
-and run `lupa-pona` for a quick test.
+This depends entirely on your Gemini server. If you like it really simple, you
+can use `Lupa Pona`. It comes with it's own documentation. Here's how to create
+the certificate and key files, copy them to the `~/subs` directory created
+above, and run `lupa-pona` for a quick test.
 
     make cert
     cp *.pem ~/subs
