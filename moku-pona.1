@@ -148,6 +148,16 @@ You manage your subscriptions using the command-line, with Moku Pona.
 You read the resulting file using your Gemini client.
 .PP
 Moku Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
+.SS "Limitations"
+.IX Subsection "Limitations"
+Moku Pona only detects changes. Thus, if there is an item that points to a phlog
+or blog, that's great. Sometimes people put their phlog in a folder per year. If
+the Gopher menu lists each folder and a date with the latest change, then that's
+great, you can use it. Without it, you're in trouble: you need to subscribe to
+the item for the current year in order to see changes, but when the next year
+comes around, you're subscribed to the wrong item. Sometimes you're lucky and
+there will be a menu somewhere with a timestamp for the last change. Use that
+instead. Good luck!
 .SS "Dependencies"
 .IX Subsection "Dependencies"
 There are some Perl dependencies you need to satisfy in order to run this
@@ -165,6 +175,9 @@ program:
 .ie n .IP "XML::LibXML, or ""libxml\-libxml\-perl""" 4
 .el .IP "XML::LibXML, or \f(CWlibxml\-libxml\-perl\fR" 4
 .IX Item "XML::LibXML, or libxml-libxml-perl"
+.ie n .IP "URI::Escape, or ""liburi\-escape\-xs\-perl""" 4
+.el .IP "URI::Escape, or \f(CWliburi\-escape\-xs\-perl\fR" 4
+.IX Item "URI::Escape, or liburi-escape-xs-perl"
 .ie n .IP "\s-1URI\s0, or ""liburi\-perl""" 4
 .el .IP "\s-1URI\s0, or \f(CWliburi\-perl\fR" 4
 .IX Item "URI, or liburi-perl"
@@ -318,6 +331,29 @@ file in the data directory. The effect is this:
 .el .IP "If you subscribe to a feed, then the link in \f(CWupdates.txt\fR moves to the top when it changes and it links to a file in the data directory that links to the individual items in the feed." 4
 .IX Item "If you subscribe to a feed, then the link in updates.txt moves to the top when it changes and it links to a file in the data directory that links to the individual items in the feed."
 .PD
+.PP
+Example:
+.PP
+.Vb 2
+\&    moku\-pona add https://campaignwiki.org/rpg/feed.xml "RPG"
+\&    moku\-pona update
+.Ve
+.PP
+This adds the \s-1RPG\s0 entry to \f(CW\*(C`updates.txt\*(C'\fR as follows:
+.PP
+.Vb 1
+\&    => https%3A\-\-campaignwiki.org\-rpg\-feed.xml 2020\-11\-07 RPG
+.Ve
+.PP
+And if you check the file \f(CW\*(C`https:\-\-campaignwiki.org\-rpg\-feed.xml\*(C'\fR, you'll see
+that it's a regular Gemini list. You'll find 100 links like the following:
+.PP
+.Vb 1
+\&    => https://alexschroeder.ch/wiki/2020\-11\-05_Episode_34 Episode 34
+.Ve
+.PP
+Now use \f(CW\*(C`moku\-pona publish\*(C'\fR (see below) to move the files to the correct
+directory where your Gemini server expects them.
 .SS "Publishing your subscription"
 .IX Subsection "Publishing your subscription"
 .Vb 1
@@ -331,6 +367,20 @@ above, then the cache files need to get copied as well!
 .PP
 Example:
 .PP
-.Vb 1
+.Vb 2
+\&    mkdir ~/subs
 \&    moku\-pona publish ~/subs
+.Ve
+.SS "Serving your subscriptions via Gemini"
+.IX Subsection "Serving your subscriptions via Gemini"
+This depends entirely on your Gemini server. If like it really simple, you can
+use \f(CW\*(C`Lupa Pona\*(C'\fR. It comes with it's own documentation. Here's how to create the
+certificate and key files, copy them to the \f(CW\*(C`~/subs\*(C'\fR directory created above,
+and run \f(CW\*(C`lupa\-pona\*(C'\fR for a quick test.
+.PP
+.Vb 4
+\&    make cert
+\&    cp *.pem ~/subs
+\&    cd ~/subs
+\&    lupa\-pona
 .Ve

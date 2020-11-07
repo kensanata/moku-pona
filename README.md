@@ -11,6 +11,7 @@ Moku Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
 
 **Table of Contents**
 
+- [Limitations](#limitations)
 - [Dependencies](#dependencies)
 - [The Data Directory](#the-data-directory)
 - [Migration from 1.1](#migration-from-1-1)
@@ -21,6 +22,18 @@ Moku Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
 - [Update](#update)
 - [Subscribing to feeds](#subscribing-to-feeds)
 - [Publishing your subscription](#publishing-your-subscription)
+- [Serving your subscriptions via Gemini](#serving-your-subscriptions-via-gemini)
+
+## Limitations
+
+Moku Pona only detects changes. Thus, if there is an item that points to a phlog
+or blog, that's great. Sometimes people put their phlog in a folder per year. If
+the Gopher menu lists each folder and a date with the latest change, then that's
+great, you can use it. Without it, you're in trouble: you need to subscribe to
+the item for the current year in order to see changes, but when the next year
+comes around, you're subscribed to the wrong item. Sometimes you're lucky and
+there will be a menu somewhere with a timestamp for the last change. Use that
+instead. Good luck!
 
 ## Dependencies
 
@@ -31,6 +44,7 @@ program:
 - [IO::Socket::SSL](https://metacpan.org/pod/IO%3A%3ASocket%3A%3ASSL), or `libio-socket-ssl-perl`
 - [Mojo::UserAgent](https://metacpan.org/pod/Mojo%3A%3AUserAgent), or `libmojolicious-perl`
 - [XML::LibXML](https://metacpan.org/pod/XML%3A%3ALibXML), or `libxml-libxml-perl`
+- [URI::Escape](https://metacpan.org/pod/URI%3A%3AEscape), or `liburi-escape-xs-perl`
 - [URI](https://metacpan.org/pod/URI), or `liburi-perl`
 
 ## The Data Directory
@@ -156,6 +170,23 @@ moves to the top when it changes.
 top when it changes and it links to a file in the data directory that links to
 the individual items in the feed.
 
+Example:
+
+    moku-pona add https://campaignwiki.org/rpg/feed.xml "RPG"
+    moku-pona update
+
+This adds the RPG entry to `updates.txt` as follows:
+
+    => https%3A--campaignwiki.org-rpg-feed.xml 2020-11-07 RPG
+
+And if you check the file `https:--campaignwiki.org-rpg-feed.xml`, you'll see
+that it's a regular Gemini list. You'll find 100 links like the following:
+
+    => https://alexschroeder.ch/wiki/2020-11-05_Episode_34 Episode 34
+
+Now use `moku-pona publish` (see below) to move the files to the correct
+directory where your Gemini server expects them.
+
 ## Publishing your subscription
 
     moku-pona publish <directory>
@@ -167,4 +198,17 @@ above, then the cache files need to get copied as well!
 
 Example:
 
+    mkdir ~/subs
     moku-pona publish ~/subs
+
+## Serving your subscriptions via Gemini
+
+This depends entirely on your Gemini server. If like it really simple, you can
+use `Lupa Pona`. It comes with it's own documentation. Here's how to create the
+certificate and key files, copy them to the `~/subs` directory created above,
+and run `lupa-pona` for a quick test.
+
+    make cert
+    cp *.pem ~/subs
+    cd ~/subs
+    lupa-pona

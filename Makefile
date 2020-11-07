@@ -15,14 +15,16 @@ README.md: moku-pona
 	./update-readme
 
 # Create man pages.
-man: moku-pona.1
+man: moku-pona.1 lupa-pona.1
 
 %.1: %
 	pod2man $< $@
 
 # Install scripts and man pages in ~/.local
 install: ${HOME}/.local/bin/moku-pona \
-	${HOME}/.local/share/man/man1/moku-pona.1
+	${HOME}/.local/share/man/man1/moku-pona.1 \
+	${HOME}/.local/bin/lupa-pona \
+	${HOME}/.local/share/man/man1/lupa-pona.1
 
 ${HOME}/.local/bin/%: %
 	cp $< $@
@@ -33,4 +35,13 @@ ${HOME}/.local/share/man/man1/%: %
 uninstall:
 	rm \
 	${HOME}/.local/bin/moku-pona \
-	${HOME}/.local/share/man/man1/moku-pona.1
+	${HOME}/.local/share/man/man1/moku-pona.1 \
+	${HOME}/.local/bin/lupa-pona \
+	${HOME}/.local/share/man/man1/lupa-pona.1
+
+# Regenerate the certificates used by lupa-pona. These use eliptic
+# curves and are valid for five years.
+cert:
+	openssl req -new -x509 -newkey ec \
+	-pkeyopt ec_paramgen_curve:prime256v1 \
+	-days 1825 -nodes -out cert.pem -keyout key.pem
