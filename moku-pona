@@ -59,9 +59,10 @@ program:
 =cut
 
 use Modern::Perl;
-use IO::Socket::SSL;
 use IO::Socket::IP;
+use IO::Socket::SSL;
 use File::Copy qw(copy);
+use Encode qw(decode_utf8);
 use Mojo::UserAgent;
 use XML::LibXML;
 use URI;
