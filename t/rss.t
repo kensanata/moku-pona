@@ -19,6 +19,10 @@ use utf8;
 
 require "./moku-pona";
 
+our $data_dir = 'test';
+our $site_list = $data_dir . '/sites.txt';
+our $updated_list = $data_dir . '/updates.txt';
+
 my $rss = << 'EOT';
 <rss version="2.0"
     xmlns:wiki="http://purl.org/rss/1.0/modules/wiki/"

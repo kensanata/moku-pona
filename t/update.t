@@ -18,20 +18,35 @@ package server;
 use Modern::Perl;
 use base qw(Net::Server);
 
+my $title = "Moku Pona and Gopher Feeds";
+my $link = "gopher://alexschroeder.ch:70/02018-11-30_Moku_Pona_and_Gopher_Feeds";
+my $rss = << "EOT";
+<rss version="2.0">
+<channel>
+<item>
+<title>$title</title>
+<link>$link</link>
+</item>
+</channel>
+</rss>
+EOT
+
 sub process_request {
-    my $self = shift;
+  my $self = shift;
 
-    local $SIG{'ALRM'} = sub {
-      die "Timed Out!\n";
-    };
+  local $SIG{'ALRM'} = sub {
+    die "Timed Out!\n";
+  };
 
-    alarm(3); # timeout 3s
+  alarm(3); # timeout 3s
 
-    while (<STDIN>) {
-	s/[\r\n]+$//;
-	print "$_\r\n"; # basic echo
-	last if /quit/i;
-    }
+  my $url = <STDIN>;
+  $url =~ s/[\r\n]+$//;
+  if ($url =~ /feed$/) {
+    print $rss;
+  } else {
+    print "$url\r\n"; # basic echo
+  }
 }
 
 package main;
@@ -153,8 +168,36 @@ $re = qr/=> gopher:\/\/localhost:$port\/1(selector|other) \d\d\d\d-\d\d-\d\d (Te
 like($data, $re, "order of entries is correct");
 is(scalar(() = $data =~ m/# Information/g), 1, "one header line");
 
-# clean up
+# add a feed
 
-unlink($cache) if -f $cache;
+open($fh, ">>", "$site_list") or die "Cannot append to $site_list: $!\n";
+$line = "1Feed\tfeed\tlocalhost\t$port";
+print $fh "$line\n";
+close($fh);
+
+do_update();
+
+$data = load_file($updated_list);
+is(scalar(() = $data =~ m/=>/g), 3, "three menus");
+
+my $url = "gopher://localhost:$port/1feed";
+my $file = $url;
+$file =~ s/\//-/g;
+my $uri = uri_escape_utf8($file);
+like($data, qr(=> $uri \d\d\d\d-\d\d-\d\d Feed), "feed file is listed in the updates");
+ok(-f "test/$file", "feed cache test/$file exists");
+
+my $feed = load_file("test/$file");
+like($feed, qr(=> $link $title), "feed file links to feed item");
+
+save_file("test/$file", "old data");
+ok($data =~ s/$uri \d\d\d\d-\d\d-\d\d Feed/$uri 1900-01-03 Feed/, "backdated feed update");
+# save bogus updates: one backdated entry, and an even older entry
+save_file($updated_list . "=> $uri 1900-01-02 Feed\n", $data);
+
+do_update();
+
+$data = load_file($updated_list);
+is(scalar(() = $data =~ m/=>/g), 3, "still only three menus");
 
 done_testing();
