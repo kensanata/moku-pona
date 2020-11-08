@@ -482,6 +482,46 @@ sub add_update {
   save_file($updated_list, join("\n", @lines, ""));
 }
 
+sub do_update {
+  my $quiet = shift||'' eq '--quiet';
+  my $site = load_site();
+  local $| = 1; # flush
+  for my $line (@$site) {
+    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+    print("Fetching $name...") unless $quiet;
+    my $new;
+    if ($uri =~ /^gopher/) {
+      $new = query_gopher(url_to_gopher($uri));
+    } elsif ($uri =~ /^gemini/) {
+      $new = query_gemini($uri);
+    } elsif ($uri =~ /^http/) {
+      $new = query_web($uri);
+    } else {
+      warn "Don't know how to fetch $uri\n";
+      next;
+    }
+    if (not $new) {
+      warn("$name returned an empty document\n");
+      next;
+    }
+    $uri =~ s/\//-/g;
+    my $cache = "$data_dir/$uri";
+    if ($new =~ /^<(\?xml|rss)/) {
+      $new = to_gemini($new);
+      $uri = uri_escape_utf8($uri);
+      $line = "=> $uri $name"; # now referring to the local cache file
+    }
+    my $old = load_file($cache);
+    if ($new ne $old) {
+      print("updated\n") unless $quiet;
+      add_update($line);
+      save_file($cache, $new);
+    } else {
+      print("unchanged\n") unless $quiet;
+    }
+  }
+}
+
 =head2 Subscribing to feeds
 
 When the result of an update is an XML document, then it is parsed and the links
@@ -547,46 +587,6 @@ sub to_gemini {
     push(@lines, "=> $href $title");
   }
   return join("\n", @lines, "");
-}
-
-sub do_update {
-  my $quiet = shift||'' eq '--quiet';
-  my $site = load_site();
-  local $| = 1; # flush
-  for my $line (@$site) {
-    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
-    print("Fetching $name...") unless $quiet;
-    my $new;
-    if ($uri =~ /^gopher/) {
-      $new = query_gopher(url_to_gopher($uri));
-    } elsif ($uri =~ /^gemini/) {
-      $new = query_gemini($uri);
-    } elsif ($uri =~ /^http/) {
-      $new = query_web($uri);
-    } else {
-      warn "Don't know how to fetch $uri\n";
-      next;
-    }
-    if (not $new) {
-      warn("$name returned an empty document\n");
-      next;
-    }
-    $uri =~ s/\//-/g;
-    my $cache = "$data_dir/$uri";
-    if ($new =~ /^<\?xml/) {
-      $new = to_gemini($new);
-      $uri = uri_escape_utf8($uri);
-      $line = "=> $uri $name"; # now referring to the local cache file
-    }
-    my $old = load_file($cache);
-    if ($new ne $old) {
-      print("updated\n") unless $quiet;
-      add_update($line);
-      save_file($cache, $new);
-    } else {
-      print("unchanged\n") unless $quiet;
-    }
-  }
 }
 
 =head2 Publishing your subscription
