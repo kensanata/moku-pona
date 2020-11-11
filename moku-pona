@@ -429,7 +429,7 @@ sub do_cleanup {
 
 =head2 Update
 
-    moku-pona update [--quiet]
+    moku-pona update [--quiet] [names...]
 
 This updates all the subscribed items and generates a new local page for you to
 visit: C<updates.txt>.
@@ -447,6 +447,13 @@ This is how I call it from my C<crontab>, for example
 
     #m   h  dom mon dow   command
     11 7,14 *   *   *     /home/alex/bin/moku-pona update --quiet
+
+If you're testing things, you can also fetch just a limited number of items by
+listing them.
+
+Example:
+
+    moku-pona update "RPG Planet"
 
 =cut
 
@@ -474,7 +481,7 @@ sub add_update {
   # and remove any past mentions
   my $re = "=> " . quotemeta($uri) . ' \d\d\d\d-\d\d-\d\d ' . quotemeta($name);
   for (my $i = $found + 1; $i < @lines; $i++) {
-    if ($lines[$i] =~ /^$re/) {
+    while ($lines[$i] =~ /^$re$/) {
       splice(@lines, $i, 1);
     }
   }
@@ -483,11 +490,13 @@ sub add_update {
 }
 
 sub do_update {
-  my $quiet = shift||'' eq '--quiet';
+  my $quiet = grep { $_ eq '--quiet' } @_;
+  my @sites = grep { $_ ne '--quiet' } @_;
   my $site = load_site();
   local $| = 1; # flush
   for my $line (@$site) {
     my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+    next unless @sites == 0 or grep { $_ eq $name } @sites;
     print("Fetching $name...") unless $quiet;
     my $new;
     if ($uri =~ /^gopher/) {
