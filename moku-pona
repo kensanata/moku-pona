@@ -220,7 +220,7 @@ sub query_web {
   my $ua = Mojo::UserAgent->new;
   my $res = $ua->get($url)->result;
   return decode_utf8($res->body) if $res->is_success;
-  warn "Cannot fetch $url: $res->code $res->message\n";
+  warn "Cannot fetch $url: " . $res->code . ": " . $res->message . "\n";
 }
 
 =head2 Migration from 1.1
@@ -404,12 +404,12 @@ sub do_cleanup {
 	or die "Cannot read $updated_list: $!\n";
     my @lines = <$fh>;
     chomp(@lines);
-    # decide what to do about each line in updates, ignoring the date
-    my %sites = map { $_ => 1 } @$site;
+    # decide what to do about each line in updates, looking just at the names
+    my %sites = map { s/^=> (\S+)\s+(.*)/$2/; $_ => 1 } @$site;
     my @deletes;
     my @keeps;
     for my $line (@lines) {
-      if ($line =~ /^=> (\S+) \d\d\d\d-\d\d-\d\d (.+)/ and not $sites{"=> $1 $2"}) {
+      if ($line =~ /^=> \S+ \d\d\d\d-\d\d-\d\d (.+)/ and not $sites{$1}) {
 	push(@deletes, $line);
 	$todo++;
       } else {
@@ -478,10 +478,10 @@ sub add_update {
     last if $lines[$found] =~ /^=>/;
   }
   splice(@lines, $found, 0, $line);
-  # and remove any past mentions
-  my $re = "=> " . quotemeta($uri) . ' \d\d\d\d-\d\d-\d\d ' . quotemeta($name);
+  # and remove any past mentions of that name (the URI could be the URI, or a
+  # local filename, so we can't use it for our comparison)
   for (my $i = $found + 1; $i < @lines; $i++) {
-    while ($lines[$i] =~ /^$re$/) {
+    while ($lines[$i] =~ /\d\d\d\d-\d\d-\d\d $name$/) {
       splice(@lines, $i, 1);
     }
   }
