@@ -459,10 +459,10 @@ Example:
 
 sub add_update {
   my $line = shift;
+  my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
   # add current date
   my ($sec, $min, $hour, $mday, $mon, $year) = gmtime(); # UTC
   my $date = sprintf('%4d-%02d-%02d', $year + 1900, $mon + 1, $mday);
-  my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
   $line = "=> $uri $date $name";
   # load file
   my @lines;
@@ -472,21 +472,14 @@ sub add_update {
     @lines = convert(<$fh>); # from gohper
     chomp(@lines);
   }
-  my $found = 0;
-  # add it to the front but skip non-links
-  for ($found = 0; $found < @lines; $found++) {
-    last if $lines[$found] =~ /^=>/;
-  }
-  splice(@lines, $found, 0, $line);
-  # and remove any past mentions of that name (the URI could be the URI, or a
-  # local filename, so we can't use it for our comparison)
-  for (my $i = $found + 1; $i < @lines; $i++) {
-    while ($lines[$i] =~ /\d\d\d\d-\d\d-\d\d $name$/) {
-      splice(@lines, $i, 1);
-    }
-  }
+  # start the new list with the non-list links
+  my @new = grep(!/^=>/, @lines);
+  # add the line to the new list
+  push(@new, $line);
+  # add the remaining links to the new list, except for the ones matching the name of the new line
+  push(@new, grep(!/\d\d\d\d-\d\d-\d\d $name$/, grep(/^=>/, @lines)));
   # save
-  save_file($updated_list, join("\n", @lines, ""));
+  save_file($updated_list, join("\n", @new, ""));
 }
 
 sub do_update {
