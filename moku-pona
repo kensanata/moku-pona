@@ -167,7 +167,7 @@ sub query_gemini {
   # send data in one go
   print $socket "$url\r\n";
   # read response
-  undef $/;
+  local $/ = undef;
   my ($header, $response) = split(/\r\n/, <$socket>, 2);
   return $response;
 }
@@ -299,10 +299,14 @@ sub do_add {
   $name ||= $uri;
   my $line = "=> $uri $name";
   my $site = load_site();
-  if (not grep(/^=> $uri /, @$site)) {
-    push(@$site, $line);
-  } else {
+  my $uri_re = quotemeta($uri);
+  my $name_re = quotemeta($name);
+  if (grep(/^=> $uri_re /, @$site)) {
     warn("$uri already exists in $site_list\n");
+  } elsif (grep(/^=> \S+ $name_re/, @$site)) {
+    warn("$name already exists in $site_list\n");
+  } else {
+    push(@$site, $line);
   }
   save_file($site_list, join("\n", @$site, ""));
 }
@@ -479,7 +483,7 @@ sub add_update {
   # add the remaining links to the new list, except for the ones matching the name of the new line
   push(@new, grep(!/\d\d\d\d-\d\d-\d\d $name$/, grep(/^=>/, @lines)));
   # save
-  save_file($updated_list, join("\n", @new));
+  save_file($updated_list, join("\n", @new, ""));
 }
 
 sub do_update {
