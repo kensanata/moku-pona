@@ -479,7 +479,7 @@ sub add_update {
   # add the remaining links to the new list, except for the ones matching the name of the new line
   push(@new, grep(!/\d\d\d\d-\d\d-\d\d $name$/, grep(/^=>/, @lines)));
   # save
-  save_file($updated_list, join("\n", @new, ""));
+  save_file($updated_list, join("\n", @new));
 }
 
 sub do_update {
