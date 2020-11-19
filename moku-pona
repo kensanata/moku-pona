@@ -154,7 +154,7 @@ sub query_gemini {
   my ($host, $port) = split(/:/, $authority, 2);
   $port //= 1965;
   Mojo::IOLoop->client(
-    {port => $port, address => $host, tls => 1 }
+    {port => $port, address => $host, tls => 1, tls_verify => 0 }
     => sub {
       my ($loop, $err, $stream) = @_;
       if (not $stream) {
