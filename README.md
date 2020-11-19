@@ -140,7 +140,7 @@ Example:
 
 ## Update
 
-    moku-pona update [--quiet]
+    moku-pona update [--quiet] [names...]
 
 This updates all the subscribed items and generates a new local page for you to
 visit: `updates.txt`.
@@ -158,6 +158,17 @@ This is how I call it from my `crontab`, for example
 
     #m   h  dom mon dow   command
     11 7,14 *   *   *     /home/alex/bin/moku-pona update --quiet
+
+If you're testing things, you can also fetch just a limited number of items by
+listing them.
+
+Example:
+
+    moku-pona update "RPG Planet"
+
+The `updates.txt` files may contain lines that are not links at the top. These
+will remain untouched. The rest is links. New items are added at the beginning
+of the links and older copies of such items are removed from the links.
 
 ## Subscribing to feeds
 

@@ -459,6 +459,10 @@ Example:
 
     moku-pona update "RPG Planet"
 
+The C<updates.txt> files may contain lines that are not links at the top. These
+will remain untouched. The rest is links. New items are added at the beginning
+of the links and older copies of such items are removed from the links.
+
 =cut
 
 sub add_update {

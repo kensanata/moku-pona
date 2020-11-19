@@ -133,7 +133,7 @@
 .\" ========================================================================
 .\"
 .IX Title "MOKU-PONA 1"
-.TH MOKU-PONA 1 "2020-11-07" "perl v5.30.0" "User Contributed Perl Documentation"
+.TH MOKU-PONA 1 "2020-11-19" "perl v5.30.0" "User Contributed Perl Documentation"
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
@@ -296,7 +296,7 @@ Example:
 .SS "Update"
 .IX Subsection "Update"
 .Vb 1
-\&    moku\-pona update [\-\-quiet]
+\&    moku\-pona update [\-\-quiet] [names...]
 .Ve
 .PP
 This updates all the subscribed items and generates a new local page for you to
@@ -319,6 +319,19 @@ This is how I call it from my \f(CW\*(C`crontab\*(C'\fR, for example
 \&    #m   h  dom mon dow   command
 \&    11 7,14 *   *   *     /home/alex/bin/moku\-pona update \-\-quiet
 .Ve
+.PP
+If you're testing things, you can also fetch just a limited number of items by
+listing them.
+.PP
+Example:
+.PP
+.Vb 1
+\&    moku\-pona update "RPG Planet"
+.Ve
+.PP
+The \f(CW\*(C`updates.txt\*(C'\fR files may contain lines that are not links at the top. These
+will remain untouched. The rest is links. New items are added at the beginning
+of the links and older copies of such items are removed from the links.
 .SS "Subscribing to feeds"
 .IX Subsection "Subscribing to feeds"
 When the result of an update is an \s-1XML\s0 document, then it is parsed and the links
