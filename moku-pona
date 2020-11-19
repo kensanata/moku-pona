@@ -157,6 +157,10 @@ sub query_gemini {
     {port => $port, address => $host, tls => 1 }
     => sub {
       my ($loop, $err, $stream) = @_;
+      if (not $stream) {
+	warn "Cannot connect to $url\n";
+	return;
+      }
       my $header;
       $stream->on(read => sub {
 	my ($stream, $bytes) = @_;
