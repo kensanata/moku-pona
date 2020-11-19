@@ -191,9 +191,9 @@ my $feed = load_file("test/$file");
 like($feed, qr(=> $link $title), "feed file links to feed item");
 
 save_file("test/$file", "old data");
-ok($data =~ s/$uri \d\d\d\d-\d\d-\d\d Feed/$uri 1900-01-03 Feed/, "backdated feed update");
+ok($data =~ s/$uri \d\d\d\d-\d\d-\d\d Feed/$file 1900-01-03 Feed/, "backdated feed update");
 # save bogus updates: one backdated entry, and an even older entry
-save_file($updated_list . "=> $uri 1900-01-02 Feed\n", $data);
+save_file($updated_list, "=> $file 1900-01-02 Feed\n" . $data);
 
 do_update();
 

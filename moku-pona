@@ -47,29 +47,22 @@ program:
 
 =item L<Modern::Perl>, or C<libmodern-perl-perl>
 
-=item L<IO::Socket::SSL>, or C<libio-socket-ssl-perl>
-
-=item L<Mojo::UserAgent>, or C<libmojolicious-perl>
+=item L<Mojo::IOLoop>, or C<libmojolicious-perl>
 
 =item L<XML::LibXML>, or C<libxml-libxml-perl>
 
 =item L<URI::Escape>, or C<liburi-escape-xs-perl>
-
-=item L<URI>, or C<liburi-perl>
 
 =back
 
 =cut
 
 use Modern::Perl;
-use IO::Socket::IP;
-use IO::Socket::SSL;
 use File::Copy qw(copy);
 use Encode qw(decode_utf8);
-use Mojo::UserAgent;
+use Mojo::IOLoop;
 use XML::LibXML;
 use URI::Escape;
-use URI;
 
 =head2 The Data Directory
 
@@ -153,74 +146,84 @@ schemes).
 
 sub query_gemini {
   my $url = shift;
+  my $responses = shift;
   my($scheme, $authority, $path, $query, $fragment) =
       $url =~ m|(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?|;
   die "⚠ The URL '$url' must use the gemini scheme\n" unless $scheme and $scheme eq 'gemini';
   die "⚠ The URL '$url' must have an authority\n" unless $authority;
   my ($host, $port) = split(/:/, $authority, 2);
   $port //= 1965;
-  my $socket = IO::Socket::SSL->new(
-    PeerHost => $host,
-    PeerService => $port,
-    SSL_verify_mode => SSL_VERIFY_NONE)
-      or die "Cannot construct client socket: $@";
-  # send data in one go
-  print $socket "$url\r\n";
-  # read response
-  local $/ = undef;
-  my ($header, $response) = split(/\r\n/, <$socket>, 2);
-  return $response;
+  Mojo::IOLoop->client(
+    {port => $port, address => $host, tls => 1 }
+    => sub {
+      my ($loop, $err, $stream) = @_;
+      my $header;
+      $stream->on(read => sub {
+	my ($stream, $bytes) = @_;
+	$responses->{$url} .= $bytes;
+	$header = $responses->{$url} =~ s/^.*\r\n// unless $header});
+      $stream->write("$url\r\n")})
 }
 
 sub query_gopher {
-  my $selector = shift;
-  my $host = shift;
-  my $port = shift;
-  # create client
-  my $socket = IO::Socket::IP->new(
-    PeerHost => $host,
-    PeerPort => $port,
-    Timeout  => 30,
-    Type     => SOCK_STREAM, )
-      or warn "Cannot construct client socket to $host:$port: $@\n";
-  return unless $socket;
-  my $result;
-  eval {
-    local $SIG{ALRM} = sub { die "timeout\n"; };
-    alarm 10;
-    $socket->print("$selector\r\n");
-    sleep(1);
-    shutdown($socket, 1);
-    local $/ = undef; # slurp
-    $result = <$socket>;
-    alarm 0;
-  };
-  if ($@) {
-    warn $@;
-    return;
-  }
-  return $result;
+  my $url = shift;
+  my $responses = shift;
+  my ($selector, $host, $port) = url_to_gopher($url);
+  my $tls = $url =~ /^gophers/;
+  Mojo::IOLoop->client(
+    {port => $port, address => $host, tls => $tls }
+    => sub {
+      my ($loop, $err, $stream) = @_;
+      if (not $stream) {
+	warn "Cannot connect to $url\n";
+	return;
+      }
+      $stream->on(
+	read => sub {
+	  my ($stream, $bytes) = @_;
+	  $responses->{$url} .= $bytes});
+      $stream->write("$selector\r\n")})
 }
 
 sub url_to_gopher {
-  my $str = shift;
-  $str = "gopher://" . $str unless $str =~ /:\/\//;
-  my $uri = URI->new($str);
-  return if not $uri->scheme or $uri->scheme !~ /^gophers?$/;
-  my $name = shift||$uri;
-  my $path = $uri->path_query;
+  my $url = shift;
+  my $name = shift||$url;
+  my($scheme, $authority, $path, $query, $fragment) =
+      $url =~ m|(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?|;
+  $scheme ||= "gopher";
+  return unless $scheme =~ /^gophers?$/;
   $path = substr($path, 1) if substr($path, 0, 1) eq "/";
   my $type = $path ? substr($path, 0, 1) : "1";
   my $selector = $path ? substr($path, 1) : "";
-  return ($selector, $uri->host, $uri->port||70);
+  my ($host, $port) = split(/:/, $authority, 2);
+  return ($selector, $host, $port||70);
 }
 
 sub query_web {
   my $url = shift;
-  my $ua = Mojo::UserAgent->new;
-  my $res = $ua->get($url)->result;
-  return decode_utf8($res->body) if $res->is_success;
-  warn "Cannot fetch $url: " . $res->code . ": " . $res->message . "\n";
+  my $responses = shift;
+  my($scheme, $authority, $path, $query, $fragment) =
+      $url =~ m|(?:([^:/?#]+):)?(?://([^/?#]*))?([^?#]*)(?:\?([^#]*))?(?:#(.*))?|;
+  my $tls = $scheme eq "https";
+  my ($host, $port) = split(/:/, $authority, 2);
+  $path ||= "/";
+  my $selector = $path;
+  $selector .= "?" . $query if $query;
+  # ignore the fragment
+  $port ||= $tls ? 443 : 80;
+  Mojo::IOLoop->client(
+    {port => $port, address => $host, tls => $tls }
+    => sub {
+      my ($loop, $err, $stream) = @_;
+      my $header;
+      $stream->on(read => sub {
+	my ($stream, $bytes) = @_;
+	$responses->{$url} .= $bytes;
+	$header = $responses->{$url} =~ s/^.*\r\n\r\n//s unless $header});
+      $stream->write("GET $selector HTTP/1.0\r\n"
+		     . "Host: $host:$port\r\n"
+		     . "User-Agent: moku-pona\r\n"
+		     . "\r\n")});
 }
 
 =head2 Migration from 1.1
@@ -494,40 +497,53 @@ sub do_update {
   my $quiet = grep { $_ eq '--quiet' } @_;
   my @sites = grep { $_ ne '--quiet' } @_;
   my $site = load_site();
-  local $| = 1; # flush
+  my %responses;
+  my @uris;
+  my %names;
+  my %lines;
   for my $line (@$site) {
     my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
     next unless @sites == 0 or grep { $_ eq $name } @sites;
-    print("Fetching $name...") unless $quiet;
-    my $new;
+    say("Fetching $name...") unless $quiet;
+    push(@uris, $uri);
+    $names{$uri} = $name;
+    $lines{$uri} = $line;
     if ($uri =~ /^gopher/) {
-      $new = query_gopher(url_to_gopher($uri));
+      query_gopher($uri, \%responses);
     } elsif ($uri =~ /^gemini/) {
-      $new = query_gemini($uri);
+      query_gemini($uri, \%responses);
     } elsif ($uri =~ /^http/) {
-      $new = query_web($uri);
+      query_web($uri, \%responses);
     } else {
       warn "Don't know how to fetch $uri\n";
-      next;
     }
+  }
+
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
+
+  for my $uri (keys %responses) {
+    my $name = $names{$uri};
+    # decode the UTF-8 when we have the entire response
+    my $new = decode_utf8($responses{$uri});
     if (not $new) {
       warn("$name returned an empty document\n");
       next;
     }
-    $uri =~ s/\//-/g;
-    my $cache = "$data_dir/$uri";
+    my $filename = $uri;
+    $filename =~ s/\//-/g;
+    my $cache = "$data_dir/$filename";
     if ($new =~ /^<(\?xml|rss)/) {
       $new = to_gemini($new);
-      $uri = uri_escape_utf8($uri);
-      $line = "=> $uri $name"; # now referring to the local cache file
+      my $encoded = uri_escape_utf8($filename);
+      $lines{$uri} = "=> $encoded $name"; # now referring to the local cache file
     }
     my $old = load_file($cache);
     if ($new ne $old) {
-      print("updated\n") unless $quiet;
-      add_update($line);
+      say "$name updated" unless $quiet;
+      add_update($lines{$uri});
       save_file($cache, $new);
     } else {
-      print("unchanged\n") unless $quiet;
+      say "$name unchanged" unless $quiet;
     }
   }
 }
