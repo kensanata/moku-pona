@@ -1,6 +1,8 @@
 blib
 test
 target
+*.tar
+*.old
 *.bak
 *.json
 *.tar.gz

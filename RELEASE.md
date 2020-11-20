@@ -18,6 +18,6 @@ CPAN](https://www.perl.com/article/how-to-upload-a-script-to-cpan/) by
 David Farrell (2016):
 
 ```
-perl Makefile.PL && make && make dist
-cpan-upload -u SCHROEDER App-mokupona-2.01.tar.gz
+perl Makefile.PL && make manifest && make && make dist
+cpan-upload -u SCHROEDER App-mokupona-2.02.tar.gz
 ```
