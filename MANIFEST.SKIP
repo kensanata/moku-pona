@@ -1,0 +1,8 @@
+Makefile
+RELEASE.md
+target
+test
+blib
+\.git
+.*\.bak$
+.*~$

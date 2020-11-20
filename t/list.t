@@ -16,7 +16,7 @@
 use Test::More;
 use Encode qw(decode_utf8);
 
-require "./moku-pona";
+require "./script/moku-pona";
 
 our $data_dir = 'test';
 our $site_list = $data_dir . '/sites.txt';

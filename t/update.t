@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU General Public License along with
 # this program. If not, see <http://www.gnu.org/licenses/>.
 
-package server;
-
 use Modern::Perl;
-use base qw(Net::Server);
+use Mojo::IOLoop;
+use IO::Socket::IP;
+use Test::More;
 
 my $title = "Moku Pona and Gopher Feeds";
 my $link = "gopher://alexschroeder.ch:70/02018-11-30_Moku_Pona_and_Gopher_Feeds";
@@ -31,62 +31,8 @@ my $rss = << "EOT";
 </rss>
 EOT
 
-sub process_request {
-  my $self = shift;
+my $port = Mojo::IOLoop::Server->generate_port;
 
-  local $SIG{'ALRM'} = sub {
-    die "Timed Out!\n";
-  };
-
-  alarm(3); # timeout 3s
-
-  my $url = <STDIN>;
-  $url =~ s/[\r\n]+$//;
-  if ($url =~ /feed$/) {
-    print $rss;
-  } else {
-    print "$url\r\n"; # basic echo
-  }
-}
-
-package main;
-
-use Modern::Perl;
-use Test::More;
-use IO::Socket::IP;
-
-require "./moku-pona";
-
-our $data_dir = 'test';
-our $site_list = $data_dir . '/sites.txt';
-our $updated_list = $data_dir . '/updates.txt';
-
-# Find an unused port
-sub random_port {
-  use Errno  qw( EADDRINUSE );
-  use Socket qw( PF_INET SOCK_STREAM INADDR_ANY sockaddr_in );
-
-  my $family = PF_INET;
-  my $type   = SOCK_STREAM;
-  my $proto  = getprotobyname('tcp')  or die "getprotobyname: $!";
-  my $host   = INADDR_ANY;  # Use inet_aton for a specific interface
-
-  for my $i (1..3) {
-    my $port   = 1024 + int(rand(65535 - 1024));
-    socket(my $sock, $family, $type, $proto) or die "socket: $!";
-    my $name = sockaddr_in($port, $host)     or die "sockaddr_in: $!";
-    setsockopt($sock, SOL_SOCKET, SO_REUSEADDR, 1);
-    bind($sock, $name)
-	and close($sock)
-	and return $port;
-    die "bind: $!" if $! != EADDRINUSE;
-    print "Port $port in use, retrying...\n";
-  }
-  die "Tried 3 random ports and failed.\n"
-}
-
-# forking a test server
-my $port = random_port();
 my $pid = fork();
 
 END {
@@ -99,11 +45,25 @@ END {
 if (!defined $pid) {
   die "Cannot fork: $!";
 } elsif ($pid == 0) {
-  server->run(port => $port);
+  Mojo::IOLoop->server({port => $port} => sub {
+    my ($loop, $stream) = @_;
+    $stream->on(read => sub {
+      my ($stream, $bytes) = @_;
+      $bytes =~ s/[\r\n]+$//;
+      if ($bytes =~ /feed$/) {
+	$stream->write($rss);
+      } else {
+	$stream->write("$bytes\r\n"); # echo
+      }
+      $stream->close_gracefully()})});
+  Mojo::IOLoop->start unless Mojo::IOLoop->is_running;
 }
 
-# give it time to start
-sleep(1);
+require "./script/moku-pona";
+
+our $data_dir = 'test';
+our $site_list = $data_dir . '/sites.txt';
+our $updated_list = $data_dir . '/updates.txt';
 
 # setup
 

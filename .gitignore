@@ -1,3 +1,10 @@
+blib
 test
 target
-*.pem
+*.bak
+*.json
+*.tar.gz
+pm_to_blib
+Makefile
+MANIFEST
+MYMETA.yml

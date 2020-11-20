@@ -17,7 +17,7 @@ use Modern::Perl;
 use Test::More;
 use utf8;
 
-require "./moku-pona";
+require "./script/moku-pona";
 
 my $rss = << 'EOT';
 <rss version="2.0"

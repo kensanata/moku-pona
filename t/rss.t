@@ -17,7 +17,7 @@ use Modern::Perl;
 use Test::More;
 use utf8;
 
-require "./moku-pona";
+require "./script/moku-pona";
 
 our $data_dir = 'test';
 our $site_list = $data_dir . '/sites.txt';

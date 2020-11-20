@@ -16,7 +16,7 @@
 use Modern::Perl;
 use Test::More;
 
-require "./moku-pona";
+require "./script/moku-pona";
 
 my $atom = << 'EOT';
 <?xml version="1.0" encoding="utf-8"?>

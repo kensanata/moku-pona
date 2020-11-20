@@ -1,0 +1,10 @@
+2.01
+
+- New feature: monitors Gemini and web URLs in addition to Gopher URLs
+
+- Incompatible change: the resulting updates.txt is now uses Gemini
+  format
+
+- Incompatible change: creates local Gemini files for Atom and RSS
+  feeds it finds and links to them from updates.txt
+

@@ -38,6 +38,22 @@ comes around, you're subscribed to the wrong item. Sometimes you're lucky and
 there will be a menu somewhere with a timestamp for the last change. Use that
 instead. Good luck!
 
+=head2 License
+
+GNU Affero General Public License
+
+=head2 Installation
+
+Using C<cpan>:
+
+    cpan App::mokupona
+
+Manual install:
+
+    perl Makefile.PL
+    make
+    make install
+
 =head2 Dependencies
 
 There are some Perl dependencies you need to satisfy in order to run this
@@ -57,7 +73,7 @@ program:
 
 =cut
 
-use Modern::Perl;
+use Modern::Perl '2018';
 use File::Copy qw(copy);
 use Encode qw(decode_utf8);
 use Mojo::IOLoop;

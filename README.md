@@ -13,6 +13,8 @@ You read it all using your Gemini client.
 **Table of Contents**
 
 - [Limitations](#limitations)
+- [License](#license)
+- [Installation](#installation)
 - [Dependencies](#dependencies)
 - [The Data Directory](#the-data-directory)
 - [Migration from 1.1](#migration-from-1-1)
@@ -36,17 +38,31 @@ comes around, you're subscribed to the wrong item. Sometimes you're lucky and
 there will be a menu somewhere with a timestamp for the last change. Use that
 instead. Good luck!
 
+## License
+
+GNU Affero General Public License
+
+## Installation
+
+Using `cpan`:
+
+    cpan App::mokupona
+
+Manual install:
+
+    perl Makefile.PL
+    make
+    make install
+
 ## Dependencies
 
 There are some Perl dependencies you need to satisfy in order to run this
 program:
 
 - [Modern::Perl](https://metacpan.org/pod/Modern%3A%3APerl), or `libmodern-perl-perl`
-- [IO::Socket::SSL](https://metacpan.org/pod/IO%3A%3ASocket%3A%3ASSL), or `libio-socket-ssl-perl`
-- [Mojo::UserAgent](https://metacpan.org/pod/Mojo%3A%3AUserAgent), or `libmojolicious-perl`
+- [Mojo::IOLoop](https://metacpan.org/pod/Mojo%3A%3AIOLoop), or `libmojolicious-perl`
 - [XML::LibXML](https://metacpan.org/pod/XML%3A%3ALibXML), or `libxml-libxml-perl`
 - [URI::Escape](https://metacpan.org/pod/URI%3A%3AEscape), or `liburi-escape-xs-perl`
-- [URI](https://metacpan.org/pod/URI), or `liburi-perl`
 
 ## The Data Directory
 
