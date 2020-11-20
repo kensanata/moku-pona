@@ -1,4 +1,4 @@
-Makefile
+Makefile$
 RELEASE.md
 target
 test
@@ -6,4 +6,5 @@ blib
 \.git
 .*\.tar\.gz$
 .*\.bak$
+.*\.old$
 ~$
