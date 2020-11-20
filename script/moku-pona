@@ -17,7 +17,7 @@
 
 =head1 Moku Pona
 
-Moku Pona a Gemini based feed reader. It can monitor URLs to feeds or regular
+Moku Pona is a Gemini based feed reader. It can monitor URLs to feeds or regular
 pages for changes and keeps and updated list of these in a Gemini list. Moku
 Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
 
