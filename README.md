@@ -106,11 +106,27 @@ The best way to migrate your setup is probably to use the `list` subcommand
 explained later, and to recreate your list of subscriptions. Then your
 `sites.txt` file will use gemtext format.
 
-    moku-pona list > commands
+    moku-pona list | grep "moku-pona add" > commands
     mv ~/.moku-pona/sites.txt ~/.moku-pona/sites.txt~
     sh commands
 
 ## List your subscriptions
+
+    moku-pona list
+
+This lists all your current subscriptions in a format that is suitable for a
+shell script!
+
+Example:
+
+    moku-pona list | grep "alexschroeder"
+
+In this particular case, since I'm testing my own server, the result would be:
+
+    moku-pona add https://alexschroeder.ch/wiki?action=rss "rss"
+    moku-pona add gemini://alexschroeder.ch/ "gemini"
+    moku-pona add gopher://alexschroeder.ch/ "gopher"
+    moku-pona add gophers://alexschroeder.ch:7443/ "gophers"
 
 ## Add a subscription
 
