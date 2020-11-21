@@ -564,7 +564,8 @@ sub do_update {
   my %names;
   my %lines;
   for my $line (@$site) {
-    my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
+    my ($uri, $name) = $line =~ /^=> (\S+)(?:[ \t]+(.*))?/;
+    $name ||= $uri;
     next unless @sites == 0 or grep { $_ eq $name } @sites;
     say("Fetching $name...") unless $quiet;
     push(@uris, $uri);
