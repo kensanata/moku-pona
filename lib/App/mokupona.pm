@@ -1,6 +1,6 @@
 package App::mokupona;
 
-our $VERSION = 2.04;
+our $VERSION = 2.05;
 
 =head1 NAME
 
