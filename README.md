@@ -255,10 +255,9 @@ Example:
 ## Serving your subscriptions via Gemini
 
 This depends entirely on your Gemini server. If you like it really simple, you
-can use [Lupa Pona](https://alexschroeder.ch/cgit/lupa-pona/about/). It comes
-with it's own documentation. Here's how to create the certificate and key files,
-copy them to the `~/subs` directory created above, and run `lupa-pona` for a
-quick test.
+can use [Lupa Pona](https://metacpan.org/pod/App%3A%3Alupapona). Here's how to create the certificate and key
+files, copy them to the `~/subs` directory created above, and run `lupa-pona`
+for a quick test.
 
     make cert
     cp *.pem ~/subs
