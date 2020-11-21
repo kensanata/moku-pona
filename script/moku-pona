@@ -87,11 +87,21 @@ probably C<~/.moku-pona> on your system.
 
 =over
 
-=item If you have C<MOKU_PONA> environment variable set, then that's your data
+=item If you have the C<MOKU_PONA> environment variable set, then that's your data
 directory.
 
-=item If you don't, but you have the C<HOME> environment variable set (this is
-what usually happens), then your data directory is C<$HOME/.moku-pona>.
+=item If you have the C<XDG_DATA_HOME> environment variable set, then your data
+directory is F<$XDG_DATA_HOME/moku-pona>.
+
+=item If you you have the C<HOME> environment variable set, and you have a
+F<$HOME/.local> directory, then your data directory is
+F<$HOME/.local/moku-pona>.
+
+=item If you have the C<HOME> environment variable set, then your data directory
+is F<$HOME/.moku-pona>.
+
+=item If you have the C<APPDATA> environment variable set (Windows), then your
+data directory is F<$APPDATA/moku-pona>.
 
 =item The last option is to have the C<LOGDIR> environment variable set.
 
@@ -102,9 +112,25 @@ cache files are simply the URL with all the slashes replaced by a hyphen.
 
 =cut
 
-our $data_dir = $ENV{MOKU_PONA};
-$data_dir ||= $ENV{HOME} . '/.moku-pona' if $ENV{HOME};
-$data_dir ||= $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR};
+our $data_dir = data_dir();
+say "Using $data_dir";
+
+sub data_dir {
+  return $ENV{MOKU_PONA} if $ENV{MOKU_PONA};
+  # find an existing directory
+  return $ENV{XDG_DATA_HOME} . '/moku-pona' if $ENV{XDG_DATA_HOME} and -d $ENV{XDG_DATA_HOME} . '/moku-pona';
+  return $ENV{HOME} . '/.local/moku-pona' if $ENV{HOME} and -d $ENV{HOME} . '/.local/moku-pona';
+  return $ENV{HOME} . '/.moku-pona' if $ENV{HOME} and -d $ENV{HOME} . '/.moku-pona';
+  return $ENV{APPDATA} . '/moku-pona' if $ENV{APPDATA} and -d $ENV{APPDATA} . '/.moku-pona';
+  return $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR} and -d $ENV{LOGDIR} . '/.moku-pona';
+  # or use a new one
+  return $ENV{XDG_DATA_HOME} . '/moku-pona' if $ENV{XDG_DATA_HOME};
+  return $ENV{HOME} . '/.local/moku-pona' if $ENV{HOME} and -d $ENV{HOME} . '/.local';
+  return $ENV{HOME} . '/.moku-pona' if $ENV{HOME};
+  return $ENV{APPDATA} . '/moku-pona' if $ENV{APPDATA};
+  return $ENV{LOGDIR} . '/.moku-pona' if $ENV{LOGDIR};
+  die "Please set the MOKU_PONA environment variable to a directory name\n";
+}
 
 =pod
 

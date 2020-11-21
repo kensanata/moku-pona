@@ -1,6 +1,6 @@
 # Moku Pona
 
-Moku Pona a Gemini based feed reader. It can monitor URLs to feeds or regular
+Moku Pona is a Gemini based feed reader. It can monitor URLs to feeds or regular
 pages for changes and keeps and updated list of these in a Gemini list. Moku
 Pona knows how to fetch Gopher URLs, Gemini URLs, and regular web URLs.
 
@@ -69,10 +69,17 @@ program:
 Moku Pona keeps the list of URLs you are subscribed to in directory. It's
 probably `~/.moku-pona` on your system.
 
-- If you have `MOKU_PONA` environment variable set, then that's your data
+- If you have the `MOKU_PONA` environment variable set, then that's your data
 directory.
-- If you don't, but you have the `HOME` environment variable set (this is
-what usually happens), then your data directory is `$HOME/.moku-pona`.
+- If you have the `XDG_DATA_HOME` environment variable set, then your data
+directory is `$XDG_DATA_HOME/moku-pona`.
+- If you you have the `HOME` environment variable set, and you have a
+`$HOME/.local` directory, then your data directory is
+`$HOME/.local/moku-pona`.
+- If you have the `HOME` environment variable set, then your data directory
+is `$HOME/.moku-pona`.
+- If you have the `APPDATA` environment variable set (Windows), then your
+data directory is `$APPDATA/moku-pona`.
 - The last option is to have the `LOGDIR` environment variable set.
 
 The data directory contains a copy of the latest resources. The names of these
