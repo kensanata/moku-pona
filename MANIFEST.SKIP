@@ -1,4 +1,5 @@
 Makefile$
+MANIFEST.SKIP
 RELEASE.md
 target
 test
