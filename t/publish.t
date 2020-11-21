@@ -24,7 +24,7 @@ our $data_dir = 'test';
 our $site_list = $data_dir . '/sites.txt';
 our $updated_list = $data_dir . '/updates.txt';
 my $target = 'target';
-my $file = 'gopher:--alexschroeder.ch:70-do-rss';
+my $file = 'gopher---alexschroeder.ch-70-do-rss';
 
 my @lines;
 

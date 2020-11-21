@@ -81,7 +81,7 @@ close($fh);
 
 unlink($updated_list) if -f $updated_list;
 
-my $cache = "$data_dir/gopher:--localhost:$port-1selector";
+my $cache = "$data_dir/gopher---localhost-$port-1selector";
 unlink($cache) if -f $cache;
 
 my $site = load_site();
@@ -142,7 +142,7 @@ is(scalar(() = $data =~ m/=>/g), 3, "three menus");
 
 my $url = "gopher://localhost:$port/1feed";
 my $file = $url;
-$file =~ s/\//-/g;
+$file =~ s/[\/:]/-/g;
 my $uri = uri_escape_utf8($file);
 like($data, qr(=> $uri \d\d\d\d-\d\d-\d\d Feed), "feed file is listed in the updates");
 ok(-f "test/$file", "feed cache test/$file exists");

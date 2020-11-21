@@ -448,7 +448,7 @@ sub do_cleanup {
   my $site = load_site();
   my %caches = map {
     my ($uri, $name) = /^=> (\S+)\s+(.*)/;
-    $uri =~ s/\//-/g;
+    $uri =~ s/[\/:]/-/g;
     "$data_dir/$uri" => 1;
   } @$site;
   # get a list of text files in the directory
@@ -592,7 +592,7 @@ sub do_update {
       next;
     }
     my $filename = $uri;
-    $filename =~ s/\//-/g;
+    $filename =~ s/[\/:]/-/g;
     my $cache = "$data_dir/$filename";
     if ($new =~ /^<(\?xml|rss)/) {
       $new = to_gemini($new);
@@ -725,7 +725,7 @@ sub do_publish {
     my ($uri, $name) = $line =~ /^=> file:\/\/\/(\S+)\s+(.*)/;
     # if the target is a local file, then that's because it is the result of a
     # to_gemini call in do_update, so we need to copy it as well
-    $uri =~ s/\//-/g;
+    $uri =~ s/[\/:]/-/g;
     if (-f "$data_dir/$uri") {
       copy("$data_dir/$uri", "$target/$uri");
     }
