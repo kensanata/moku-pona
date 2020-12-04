@@ -113,7 +113,7 @@ cache files are simply the URL with all the slashes replaced by a hyphen.
 =cut
 
 our $data_dir = data_dir();
-say "Using $data_dir";
+# say "Using $data_dir";
 
 sub data_dir {
   return $ENV{MOKU_PONA} if $ENV{MOKU_PONA};
