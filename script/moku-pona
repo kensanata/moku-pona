@@ -80,6 +80,8 @@ use Mojo::IOLoop;
 use XML::LibXML;
 use URI::Escape;
 
+binmode STDOUT, ":utf8";
+
 =head2 The Data Directory
 
 Moku Pona keeps the list of URLs you are subscribed to in directory. It's
