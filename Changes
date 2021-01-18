@@ -1,3 +1,7 @@
+2.09
+
+- Improved handling of non-ASCII characters when naming the URIs.
+
 2.05
 
 - Change the colon to hyphens in cache files such that it will work
