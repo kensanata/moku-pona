@@ -69,18 +69,27 @@ program:
 
 =item L<URI::Escape>, or C<liburi-escape-xs-perl>
 
+=item L<Encode::Locale>, or c<libencode-locale-perl>
+
 =back
 
 =cut
 
 use Modern::Perl '2018';
 use File::Copy qw(copy);
+use Encode::Locale qw(decode_argv);
 use Encode qw(decode_utf8);
 use Mojo::IOLoop;
 use XML::LibXML;
 use URI::Escape;
 
-binmode STDOUT, ":utf8";
+decode_argv();
+
+if (-t) {
+  binmode(STDIN, ":encoding(console_in)");
+  binmode(STDOUT, ":encoding(console_out)");
+  binmode(STDERR, ":encoding(console_out)");
+}
 
 =head2 The Data Directory
 
