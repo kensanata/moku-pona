@@ -15,6 +15,7 @@ WriteMakefile(
     'strict'   => 0,
     'warnings' => 0,
     'Modern::Perl' => 1.20180701, # for '2018'
+    'Encode::Locale' => 0,
     'Mojo::IOLoop' => 0,
     'XML::LibXML' => 0,
     'URI::Escape' => 0,
