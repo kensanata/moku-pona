@@ -63,6 +63,7 @@ program:
 - [Mojo::IOLoop](https://metacpan.org/pod/Mojo%3A%3AIOLoop), or `libmojolicious-perl`
 - [XML::LibXML](https://metacpan.org/pod/XML%3A%3ALibXML), or `libxml-libxml-perl`
 - [URI::Escape](https://metacpan.org/pod/URI%3A%3AEscape), or `liburi-escape-xs-perl`
+- [Encode::Locale](https://metacpan.org/pod/Encode%3A%3ALocale), or c&lt;libencode-locale-perl>
 
 ## The Data Directory
 
