@@ -678,7 +678,8 @@ sub to_gemini {
   my @lines;
   for my $node ($nodes->get_nodelist) {
     my $titles = $xpc->findnodes('atom:title', $node) || $node->getChildrenByTagName('title');
-    my $title = $titles->shift->textContent; # take the first
+    my $first = $titles->shift;
+    my $title = $first ? $first->textContent : "untitled";
     $title =~ s/\s+$//; # trim right
     $title =~ s/^\s+//; # trim left
     my $links = $xpc->findnodes('atom:link', $node) || $node->getChildrenByTagName('link');
