@@ -82,6 +82,7 @@ use Encode qw(decode_utf8);
 use Mojo::IOLoop;
 use XML::LibXML;
 use URI::Escape;
+use List::Util qw(none);
 
 decode_argv();
 
@@ -326,14 +327,16 @@ sub save_file {
 
 =head2 List your subscriptions
 
-    moku-pona list
+    moku-pona list [names...]
 
 This lists all your current subscriptions in a format that is suitable for a
-shell script!
+shell script. Optionally, only list a subset of the lines. All lines are matched
+against the regular expressions you provide and are only listed if there is at
+least one match, if you provided any.
 
 Example:
 
-    moku-pona list | grep "alexschroeder"
+    moku-pona list alex
 
 In this particular case, since I'm testing my own server, the result would be:
 
@@ -345,10 +348,16 @@ In this particular case, since I'm testing my own server, the result would be:
 =cut
 
 sub do_list {
+  my @args = @_;
   my $site = load_site();
-  print("Subscribed items in $site_list:\n");
+  if (@args) {
+    print("Subscribed items in $site_list matching @args:\n");
+  } else {
+    print("Subscribed items in $site_list:\n");
+  }
   print("none\n") unless @$site;
   for my $line (@$site) {
+    next if @args and none { $line =~ /$_/ } @args;
     # skip item type
     my ($uri, $name) = $line =~ /^=> (\S+)\s+(.*)/;
     print(qq{moku-pona add $uri "$name"\n});
@@ -755,7 +764,7 @@ sub main {
   my $command = shift(@ARGV) || "help";
   if ($command eq "add") { do_add(@ARGV) }
   elsif ($command eq "remove") { do_remove(@ARGV) }
-  elsif ($command eq "list") { do_list() }
+  elsif ($command eq "list") { do_list(@ARGV) }
   elsif ($command eq "cleanup") { do_cleanup(@ARGV) }
   elsif ($command eq "update") { do_update(@ARGV) }
   elsif ($command eq "convert") { do_convert() }
