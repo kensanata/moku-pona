@@ -389,7 +389,7 @@ sub do_add {
   my $name_re = quotemeta($name);
   if (grep(/^=> $uri_re /, @$site)) {
     warn("$uri already exists in $site_list\n");
-  } elsif (grep(/^=> \S+ $name_re/, @$site)) {
+  } elsif (grep(/^=> \S+ $name_re$/, @$site)) {
     warn("$name already exists in $site_list\n");
   } else {
     push(@$site, $line);
