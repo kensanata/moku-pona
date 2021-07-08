@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/home/alex/perl5/perlbrew/perls/perl-5.32.0/bin/perl
 # Copyright (C) 2018–2021  Alex Schroeder <alex@gnu.org>
 
 # This program is free software: you can redistribute it and/or modify it under
@@ -212,10 +212,11 @@ sub query_gemini {
      tls_options => { SSL_verify_mode => 0x00 }}
     => sub {
       my ($loop, $err, $stream) = @_;
-      if (not $stream) {
-	warn "Cannot connect to $url\n";
+      if ($err) {
+	warn "Cannot connect to $url: $err\n";
 	return;
       }
+      $stream->timeout(300); # 5 min
       my $header;
       $stream->on(read => sub {
 	my ($stream, $bytes) = @_;
@@ -233,10 +234,11 @@ sub query_gopher {
     {port => $port, address => $host, tls => $tls }
     => sub {
       my ($loop, $err, $stream) = @_;
-      if (not $stream) {
-	warn "Cannot connect to $url\n";
+      if ($err) {
+	warn "Cannot connect to $url: $err\n";
 	return;
       }
+      $stream->timeout(300); # 5 min
       $stream->on(
 	read => sub {
 	  my ($stream, $bytes) = @_;
