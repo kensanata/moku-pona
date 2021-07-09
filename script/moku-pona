@@ -209,7 +209,7 @@ sub query_gemini {
   $port //= 1965;
   Mojo::IOLoop->client(
     {port => $port, address => $host, tls => 1,
-     tls_options => { SSL_verify_mode => 0x00 }}
+     tls_options => { SSL_verify_mode => 0x00 }, timeout => 120}
     => sub {
       my ($loop, $err, $stream) = @_;
       if ($err) {
@@ -231,7 +231,7 @@ sub query_gopher {
   my ($selector, $host, $port) = url_to_gopher($url);
   my $tls = $url =~ /^gophers/;
   Mojo::IOLoop->client(
-    {port => $port, address => $host, tls => $tls }
+    {port => $port, address => $host, tls => $tls, timeout => 120 }
     => sub {
       my ($loop, $err, $stream) = @_;
       if ($err) {
@@ -273,7 +273,7 @@ sub query_web {
   # ignore the fragment
   $port ||= $tls ? 443 : 80;
   Mojo::IOLoop->client(
-    {port => $port, address => $host, tls => $tls }
+    {port => $port, address => $host, tls => $tls, timeout => 120 }
     => sub {
       my ($loop, $err, $stream) = @_;
       my $header;
