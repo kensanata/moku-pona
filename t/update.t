@@ -74,7 +74,7 @@ if (-d $data_dir) {
   unlink(@files);
 }
 
-open(my $fh, ">", "$site_list") or die "Cannot write $site_list: $!\n";
+open(my $fh, ">", $site_list) or die "Cannot write $site_list: $!\n";
 my $line = "1Test Phlog\tselector\tlocalhost\t$port";
 print $fh "$line\n";
 close($fh);
@@ -113,10 +113,10 @@ is(scalar(() = $data =~ m/$re/mg), 1, "just one line");
 $data = "# Information\n" . $data;
 save_file($updated_list, $data);
 
-# add another phlog
+# add another phlog containing special regular expression characters ( )
 
-open($fh, ">>", "$site_list") or die "Cannot append to $site_list: $!\n";
-$line = "1Other Phlog\tother\tlocalhost\t$port";
+open($fh, ">>", $site_list) or die "Cannot append to $site_list: $!\n";
+$line = "1(Other) Phlog\tother\tlocalhost\t$port";
 print $fh "$line\n";
 close($fh);
 
@@ -124,9 +124,21 @@ do_update();
 
 $data = load_file($updated_list);
 is(scalar(() = $data =~ m/=>/g), 2, "two menus");
-$re = qr/=> gopher:\/\/localhost:$port\/1(selector|other) \d\d\d\d-\d\d-\d\d (Test|Other) Phlog/;
+$re = qr/=> gopher:\/\/localhost:$port\/1(selector|other) \d\d\d\d-\d\d-\d\d (Test|\(Other\)) Phlog/;
 like($data, $re, "order of entries is correct");
 is(scalar(() = $data =~ m/# Information/g), 1, "one header line");
+
+# change the cached data for this phlog and check again
+
+$cache = "$data_dir/gopher---localhost-$port-1other";
+open($fh, ">>", $cache) or die "Cannot append to $site_list: $!\n";
+print $fh "lalala\n";
+close($fh);
+
+do_update();
+
+$data = load_file($updated_list);
+is(scalar(() = $data =~ m/=>/g), 2, "still two menus");
 
 # add a feed
 

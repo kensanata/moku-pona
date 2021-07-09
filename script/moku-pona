@@ -571,6 +571,7 @@ sub add_update {
   # add the line to the new list
   push(@new, $line);
   # add the remaining links to the new list, except for the ones matching the name of the new line
+  $name = quotemeta($name);
   push(@new, grep(!/\d\d\d\d-\d\d-\d\d $name$/, grep(/^=>/, @lines)));
   # save
   save_file($updated_list, join("\n", @new, ""));
