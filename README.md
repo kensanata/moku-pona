@@ -29,14 +29,14 @@ You read it all using your Gemini client.
 
 ## Limitations
 
-Moku Pona only detects changes. Thus, if there is an item that points to a phlog
-or blog, that's great. Sometimes people put their phlog in a folder per year. If
-the Gopher menu lists each folder and a date with the latest change, then that's
-great, you can use it. Without it, you're in trouble: you need to subscribe to
-the item for the current year in order to see changes, but when the next year
-comes around, you're subscribed to the wrong item. Sometimes you're lucky and
-there will be a menu somewhere with a timestamp for the last change. Use that
-instead. Good luck!
+When Moku Pona isn't watching a feed it can only detect changes on a page. Thus,
+if there is an item that points to a phlog or blog, that's great. Sometimes
+people put their phlog in a folder per year. If the Gopher menu lists each
+folder and a date with the latest change, then that's great, you can use it.
+Without it, you're in trouble: you need to subscribe to the item for the current
+year in order to see changes, but when the next year comes around, you're
+subscribed to the wrong item. Sometimes you're lucky and there will be a menu
+somewhere with a timestamp for the last change. Use that instead. Good luck!
 
 ## License
 
@@ -120,14 +120,16 @@ explained later, and to recreate your list of subscriptions. Then your
 
 ## List your subscriptions
 
-    moku-pona list
+    moku-pona list [names...]
 
 This lists all your current subscriptions in a format that is suitable for a
-shell script!
+shell script. Optionally, only list a subset of the lines. All lines are matched
+against the regular expressions you provide and are only listed if there is at
+least one match, if you provided any.
 
 Example:
 
-    moku-pona list | grep "alexschroeder"
+    moku-pona list alex
 
 In this particular case, since I'm testing my own server, the result would be:
 
