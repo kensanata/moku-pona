@@ -1,3 +1,17 @@
+2.12
+
+- Add list command.
+
+- Improve duplicate name checking.
+
+2.11
+
+- Move to Mojolicious 9.
+
+2.10
+
+- No actual release
+
 2.09
 
 - Improved handling of non-ASCII characters when naming the URIs.
